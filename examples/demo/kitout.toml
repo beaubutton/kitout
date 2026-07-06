@@ -1,0 +1,21 @@
+# Demo manifest: `kitout -m examples/demo/kitout.toml plan`
+
+[[step]]
+type = "file"
+id = "motd"
+source = "hello.txt"
+target = "/tmp/kitout-demo/motd.txt"
+
+[[step]]
+type = "file"
+id = "motd-copy"
+needs = ["motd"]
+source = "hello.txt"
+target = "/tmp/kitout-demo/motd-copy.txt"
+
+[[step]]
+type = "script"
+id = "announce"
+needs = ["motd", "motd-copy"]
+path = "announce.sh"
+on-error = "warn"
