@@ -2,8 +2,12 @@ mod dag;
 mod manifest;
 mod step;
 mod steps {
+    pub mod brewfile;
+    pub mod cmd;
     pub mod file;
+    pub mod mcp;
     pub mod script;
+    pub mod skills;
 }
 
 use std::path::PathBuf;

@@ -3,8 +3,13 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use std::collections::BTreeMap;
+
 use crate::step::Step;
-use crate::steps::{file::FileStep, script::ScriptStep};
+use crate::steps::{
+    brewfile::BrewfileStep, cmd::CommandIfMissingStep, file::FileStep, mcp::McpServerStep,
+    script::ScriptStep, skills::SkillsStep,
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -20,6 +25,66 @@ pub struct Manifest {
 pub enum StepDef {
     File(FileDef),
     Script(ScriptDef),
+    Skills(SkillsDef),
+    McpServer(McpDef),
+    CommandIfMissing(CmdDef),
+    Brewfile(BrewfileDef),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct SkillsDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// Pipe-format skills manifest, relative to this manifest's directory.
+    pub manifest: String,
+    /// State file for GC; `~` expanded. Set this to osx-baseline's
+    /// `~/.config/osx-baseline/managed-skills` to interoperate with Setup.sh.
+    #[serde(default = "default_skills_state")]
+    pub state_file: String,
+}
+
+fn default_skills_state() -> String {
+    "~/.config/kitout/managed-skills".into()
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct McpDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    pub name: String,
+    #[serde(default)]
+    pub command: Vec<String>,
+    #[serde(default)]
+    pub env: BTreeMap<String, String>,
+    pub url: Option<String>,
+    #[serde(default)]
+    pub headers: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct CmdDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// Binary name probed on PATH.
+    pub probe: String,
+    /// Installer argv, spawned directly (no shell).
+    pub install: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct BrewfileDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// Brewfile path, relative to this manifest's directory.
+    pub path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -97,6 +162,46 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                     needs: d.needs,
                     path: base.join(&d.path),
                     on_error: d.on_error,
+                }));
+            }
+            StepDef::Skills(d) => {
+                let id = d.id.clone().unwrap_or_else(|| "skills".into());
+                let state_file =
+                    PathBuf::from(shellexpand::tilde(&d.state_file).into_owned());
+                steps.push(Box::new(SkillsStep {
+                    id,
+                    needs: d.needs,
+                    manifest: base.join(&d.manifest),
+                    state_file,
+                }));
+            }
+            StepDef::McpServer(d) => {
+                let id = d.id.clone().unwrap_or_else(|| format!("mcp:{}", d.name));
+                steps.push(Box::new(McpServerStep {
+                    id,
+                    needs: d.needs,
+                    name: d.name,
+                    command: d.command,
+                    env: d.env,
+                    url: d.url,
+                    headers: d.headers,
+                }));
+            }
+            StepDef::CommandIfMissing(d) => {
+                let id = d.id.clone().unwrap_or_else(|| format!("cmd:{}", d.probe));
+                steps.push(Box::new(CommandIfMissingStep {
+                    id,
+                    needs: d.needs,
+                    probe: d.probe,
+                    install: d.install,
+                }));
+            }
+            StepDef::Brewfile(d) => {
+                let id = d.id.clone().unwrap_or_else(|| "brewfile".into());
+                steps.push(Box::new(BrewfileStep {
+                    id,
+                    needs: d.needs,
+                    path: base.join(&d.path),
                 }));
             }
         }
