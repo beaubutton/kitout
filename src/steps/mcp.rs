@@ -71,11 +71,13 @@ impl Step for McpServerStep {
         let mut cmd = Command::new("claude");
         cmd.args(["mcp", "add", "--scope", "user"]);
         if let Some(url) = &self.url {
+            // Positionals BEFORE --header: newer claude CLIs parse --header as
+            // variadic and swallow the name/url (found by the VM bootstrap test).
             cmd.args(["--transport", "http"]);
+            cmd.arg(&self.name).arg(url);
             for (k, v) in &self.headers {
                 cmd.arg("--header").arg(format!("{k}: {v}"));
             }
-            cmd.arg(&self.name).arg(url);
         } else {
             if self.command.is_empty() {
                 bail!("mcp-server '{}' has neither command nor url", self.name);
