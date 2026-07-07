@@ -12,13 +12,12 @@ on:
         required: true
         type: string
 
-permissions:
-  id-token: write # OIDC token exchange
-  contents: read
-
 jobs:
   publish:
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write # OIDC token exchange
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

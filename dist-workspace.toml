@@ -21,3 +21,7 @@ tap = "beaubutton/homebrew-tap"
 publish-jobs = ["homebrew", "./publish-crates"]
 # Strict gate injected into every build job: fmt, clippy -D warnings, tests
 github-build-setup = "../dist-build-setup.yml"
+
+# The custom crates.io publish job needs OIDC for Trusted Publishing
+[dist.github-custom-job-permissions]
+"publish-crates" = { id-token = "write", contents = "read" }
