@@ -62,6 +62,15 @@ kitout apply --force-replace   # unattended: manifest wins (servers/CI)
 macOS today. Linux is the fast-follow (the step/provider traits are shaped
 for it). Windows is out of scope.
 
+## AI transparency
+
+kitout is built in collaboration with Claude (Anthropic's Claude Code). The
+majority of the code is AI-written under human direction: the architecture
+was locked through a recorded design review, and every change is
+human-reviewed, tested, and approved before it lands. Attribution lives here
+at the repository level rather than in per-commit trailers. If something is
+broken, the human is accountable — file an issue.
+
 ## License
 
 MIT OR Apache-2.0, at your option.
