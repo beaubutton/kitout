@@ -7,8 +7,16 @@ use std::collections::BTreeMap;
 
 use crate::step::Step;
 use crate::steps::{
-    brewfile::BrewfileStep, cmd::CommandIfMissingStep, file::FileStep, mcp::McpServerStep,
-    script::ScriptStep, skills::SkillsStep,
+    block::BlockInFileStep,
+    brewfile::BrewfileStep,
+    cmd::CommandIfMissingStep,
+    defaults::{DefaultsStep, DefaultsWrite},
+    file::FileStep,
+    mcp::McpServerStep,
+    merge::{JsonMergeStep, MergeMode, TomlMergeStep},
+    script::ScriptStep,
+    secret::SecretStep,
+    skills::SkillsStep,
 };
 
 #[derive(Debug, Deserialize)]
@@ -29,6 +37,77 @@ pub enum StepDef {
     McpServer(McpDef),
     CommandIfMissing(CmdDef),
     Brewfile(BrewfileDef),
+    Secret(SecretDef),
+    JsonMerge(MergeDef),
+    TomlMerge(MergeDef),
+    BlockInFile(BlockDef),
+    Defaults(DefaultsDef),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct SecretDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// Keychain service name.
+    pub service: String,
+    /// Prompt text shown when stashing interactively.
+    pub prompt: String,
+    /// Keychain account; defaults to $USER.
+    pub account: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct MergeDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// Target file; `~` expanded.
+    pub target: String,
+    #[serde(default)]
+    pub mode: MergeMode,
+    /// Keys to merge (a TOML table).
+    pub value: toml::Value,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct BlockDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// Target file; `~` expanded.
+    pub target: String,
+    /// Marker name embedded in the begin/end comment lines.
+    pub marker: String,
+    pub block: String,
+    #[serde(default = "default_comment_prefix")]
+    pub comment_prefix: String,
+}
+
+fn default_comment_prefix() -> String {
+    "#".into()
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct DefaultsDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    #[serde(default)]
+    pub kill: Vec<String>,
+    pub write: Vec<DefaultsWriteDef>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct DefaultsWriteDef {
+    pub domain: String,
+    pub key: String,
+    pub value: toml::Value,
 }
 
 #[derive(Debug, Deserialize)]
@@ -202,6 +281,64 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                     id,
                     needs: d.needs,
                     path: base.join(&d.path),
+                }));
+            }
+            StepDef::Secret(d) => {
+                let id = d.id.clone().unwrap_or_else(|| format!("secret:{}", d.service));
+                let account = d
+                    .account
+                    .or_else(|| std::env::var("USER").ok())
+                    .context("secret step: no account and $USER unset")?;
+                steps.push(Box::new(SecretStep {
+                    id,
+                    needs: d.needs,
+                    service: d.service,
+                    account,
+                    prompt: d.prompt,
+                }));
+            }
+            StepDef::JsonMerge(d) => {
+                let id = d.id.clone().unwrap_or_else(|| format!("json-merge:{}", d.target));
+                steps.push(Box::new(JsonMergeStep {
+                    id,
+                    needs: d.needs,
+                    target: PathBuf::from(shellexpand::tilde(&d.target).into_owned()),
+                    mode: d.mode,
+                    value: d.value,
+                }));
+            }
+            StepDef::TomlMerge(d) => {
+                let id = d.id.clone().unwrap_or_else(|| format!("toml-merge:{}", d.target));
+                steps.push(Box::new(TomlMergeStep {
+                    id,
+                    needs: d.needs,
+                    target: PathBuf::from(shellexpand::tilde(&d.target).into_owned()),
+                    mode: d.mode,
+                    value: d.value,
+                }));
+            }
+            StepDef::BlockInFile(d) => {
+                let id = d.id.clone().unwrap_or_else(|| format!("block:{}", d.marker));
+                steps.push(Box::new(BlockInFileStep {
+                    id,
+                    needs: d.needs,
+                    target: PathBuf::from(shellexpand::tilde(&d.target).into_owned()),
+                    marker: d.marker,
+                    block: d.block,
+                    comment_prefix: d.comment_prefix,
+                }));
+            }
+            StepDef::Defaults(d) => {
+                let id = d.id.clone().unwrap_or_else(|| "defaults".into());
+                steps.push(Box::new(DefaultsStep {
+                    id,
+                    needs: d.needs,
+                    writes: d
+                        .write
+                        .into_iter()
+                        .map(|w| DefaultsWrite { domain: w.domain, key: w.key, value: w.value })
+                        .collect(),
+                    kill: d.kill,
                 }));
             }
         }

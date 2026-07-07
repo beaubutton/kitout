@@ -6,9 +6,9 @@ other tool manages: coding-agent **skills** (pinned, reviewed, garbage-
 collected across Claude Code, codex, opencode, gemini, and pi) and **MCP
 server registration**.
 
-> Status: **v0.0.x walking skeleton.** The engine (manifest, DAG waves,
-> plan/apply/status, `file` + `script` steps) works; the flagship `skills`
-> and `mcp-server` steps are next. Not yet ready for strangers.
+> Status: **v0.0.x, dogfooding.** The engine (manifest, DAG waves,
+> plan/apply/status) and ten step types work — including the flagship
+> `skills` and `mcp-server`. Not yet ready for strangers.
 
 ## The idea
 

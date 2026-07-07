@@ -3,11 +3,15 @@ mod manifest;
 mod step;
 mod ui;
 mod steps {
+    pub mod block;
     pub mod brewfile;
     pub mod cmd;
+    pub mod defaults;
     pub mod file;
     pub mod mcp;
+    pub mod merge;
     pub mod script;
+    pub mod secret;
     pub mod skills;
 }
 
