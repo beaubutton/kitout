@@ -148,19 +148,7 @@ fn valid_frontmatter(tree: &SkillTree) -> bool {
         .unwrap_or(false)
 }
 
-/// Fetch a skill into a SkillTree. Repo tarballs are downloaded once per
-/// repo@ref per run via `cache`.
-fn stage(source: &str, cache: &mut HashMap<String, PathBuf>, tmp: &Path) -> Result<SkillTree> {
-    if source.starts_with("http://") || source.starts_with("https://") {
-        let bytes = fetch_url(source)?;
-        let mut tree = SkillTree::new();
-        tree.insert(PathBuf::from("SKILL.md"), bytes);
-        if !valid_frontmatter(&tree) {
-            bail!("fetched SKILL.md has no YAML frontmatter");
-        }
-        return Ok(tree);
-    }
-
+fn parse_repo_source(source: &str) -> (&str, &str, Option<&str>) {
     let (spec, subpath) = match source.split_once(':') {
         Some((s, p)) => (s, Some(p)),
         None => (source, None),
@@ -169,29 +157,93 @@ fn stage(source: &str, cache: &mut HashMap<String, PathBuf>, tmp: &Path) -> Resu
         Some((r, g)) => (r, g),
         None => (spec, "HEAD"),
     };
+    (repo, gitref, subpath)
+}
 
-    let key = format!("{repo}@{gitref}");
-    let extracted = match cache.get(&key) {
-        Some(p) => p.clone(),
-        None => {
-            let url = format!("https://codeload.github.com/{repo}/tar.gz/{gitref}");
-            let bytes = fetch_url(&url)?;
-            let out = tmp.join(key.replace(['/', '@'], "__"));
-            fs::create_dir_all(&out)?;
-            tar::Archive::new(flate2::read::GzDecoder::new(&bytes[..]))
-                .unpack(&out)
-                .with_context(|| format!("extracting tarball for {key}"))?;
-            // tarball root is <repo>-<ref-ish>; locate it rather than predicting it
-            let top = fs::read_dir(&out)?
-                .filter_map(|e| e.ok())
-                .map(|e| e.path())
-                .find(|p| p.is_dir())
-                .context("tarball contained no directory")?;
-            cache.insert(key.clone(), top.clone());
-            top
+fn is_url(source: &str) -> bool {
+    source.starts_with("http://") || source.starts_with("https://")
+}
+
+/// Download every unique source concurrently: raw SKILL.md URLs into bytes,
+/// repo tarballs extracted once per repo@ref. Errors are stored per-source so
+/// one bad fetch never poisons the others.
+struct Fetched {
+    raw: HashMap<String, Result<Vec<u8>, String>>,
+    repos: HashMap<String, Result<PathBuf, String>>,
+}
+
+fn fetch_all(sources: &[String], tmp: &Path) -> Fetched {
+    let mut raw_urls: Vec<&String> = Vec::new();
+    let mut repo_keys: HashMap<String, (String, String)> = HashMap::new();
+    for s in sources {
+        if is_url(s) {
+            if !raw_urls.contains(&s) {
+                raw_urls.push(s);
+            }
+        } else {
+            let (repo, gitref, _) = parse_repo_source(s);
+            repo_keys
+                .entry(format!("{repo}@{gitref}"))
+                .or_insert_with(|| (repo.to_string(), gitref.to_string()));
         }
-    };
+    }
 
+    let mut fetched = Fetched { raw: HashMap::new(), repos: HashMap::new() };
+    std::thread::scope(|scope| {
+        let raw_handles: Vec<_> = raw_urls
+            .iter()
+            .map(|url| {
+                let url = url.to_string();
+                (url.clone(), scope.spawn(move || fetch_url(&url).map_err(|e| format!("{e:#}"))))
+            })
+            .collect();
+        let repo_handles: Vec<_> = repo_keys
+            .iter()
+            .map(|(key, (repo, gitref))| {
+                let (key, repo, gitref) = (key.clone(), repo.clone(), gitref.clone());
+                let out = tmp.join(key.replace(['/', '@'], "__"));
+                (key.clone(), scope.spawn(move || -> Result<PathBuf, String> {
+                    let url = format!("https://codeload.github.com/{repo}/tar.gz/{gitref}");
+                    let bytes = fetch_url(&url).map_err(|e| format!("{e:#}"))?;
+                    fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+                    tar::Archive::new(flate2::read::GzDecoder::new(&bytes[..]))
+                        .unpack(&out)
+                        .map_err(|e| format!("extracting tarball for {key}: {e}"))?;
+                    // tarball root is <repo>-<ref-ish>; locate, don't predict
+                    fs::read_dir(&out)
+                        .map_err(|e| e.to_string())?
+                        .filter_map(|e| e.ok())
+                        .map(|e| e.path())
+                        .find(|p| p.is_dir())
+                        .ok_or_else(|| "tarball contained no directory".to_string())
+                }))
+            })
+            .collect();
+        for (url, h) in raw_handles {
+            fetched.raw.insert(url, h.join().expect("fetch thread panicked"));
+        }
+        for (key, h) in repo_handles {
+            fetched.repos.insert(key, h.join().expect("fetch thread panicked"));
+        }
+    });
+    fetched
+}
+
+/// Assemble a skill's tree from the pre-fetched caches.
+fn stage(source: &str, fetched: &Fetched) -> Result<SkillTree> {
+    if is_url(source) {
+        let bytes = fetched.raw[source].clone().map_err(|e| anyhow::anyhow!(e))?;
+        let mut tree = SkillTree::new();
+        tree.insert(PathBuf::from("SKILL.md"), bytes);
+        if !valid_frontmatter(&tree) {
+            bail!("fetched SKILL.md has no YAML frontmatter");
+        }
+        return Ok(tree);
+    }
+
+    let (repo, gitref, subpath) = parse_repo_source(source);
+    let key = format!("{repo}@{gitref}");
+    let extracted = fetched.repos[&key].clone().map_err(|e| anyhow::anyhow!(e))?;
     let skill_dir = match subpath {
         Some(p) => extracted.join(p),
         None => extracted,
@@ -230,13 +282,14 @@ impl SkillsStep {
         let entries = parse_manifest(&raw)?;
 
         let tmp = tempfile::tempdir()?;
-        let mut cache: HashMap<String, PathBuf> = HashMap::new();
+        let sources: Vec<String> = entries.iter().map(|e| e.source.clone()).collect();
+        let fetched = fetch_all(&sources, tmp.path());
         let mut actions = Vec::new();
         let mut claimed = BTreeSet::new();
         let mut warnings = Vec::new();
 
         for e in &entries {
-            let staged = match stage(&e.source, &mut cache, tmp.path()) {
+            let staged = match stage(&e.source, &fetched) {
                 Ok(t) => Some(t),
                 Err(err) => {
                     warnings.push(format!("skill {} — fetch failed ({err:#}); keeping existing copies", e.name));

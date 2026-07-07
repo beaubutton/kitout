@@ -99,19 +99,60 @@ fn needs_chain(steps: &[Box<dyn Step>], id: &str) -> Result<std::collections::Ha
     Ok(wanted)
 }
 
+/// Run a read-only computation for every step in parallel, printing results
+/// progressively in deterministic wave order (a slow early step delays later
+/// lines, but fast steps before it appear immediately).
+fn parallel_ordered<R: Send>(
+    steps: &[Box<dyn Step>],
+    waves: &[Vec<usize>],
+    f: impl Fn(&dyn Step) -> R + Sync,
+    mut print: impl FnMut(usize, usize, R),
+) {
+    let order: Vec<(usize, usize)> = waves
+        .iter()
+        .enumerate()
+        .flat_map(|(wn, w)| w.iter().map(move |&i| (wn, i)))
+        .collect();
+    std::thread::scope(|scope| {
+        let (tx, rx) = std::sync::mpsc::channel::<(usize, R)>();
+        for &(_, i) in &order {
+            let tx = tx.clone();
+            let f = &f;
+            let step = &steps[i];
+            scope.spawn(move || {
+                let _ = tx.send((i, f(step.as_ref())));
+            });
+        }
+        drop(tx);
+        let mut buf: std::collections::HashMap<usize, R> = std::collections::HashMap::new();
+        for &(wn, i) in &order {
+            let r = loop {
+                if let Some(r) = buf.remove(&i) {
+                    break r;
+                }
+                match rx.recv() {
+                    Ok((j, r)) if j == i => break r,
+                    Ok((j, r)) => {
+                        buf.insert(j, r);
+                    }
+                    Err(_) => return,
+                }
+            };
+            print(wn, i, r);
+        }
+    });
+}
+
 fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
+    eprintln!("planning {} step(s) across {} wave(s)…", steps.len(), waves.len());
     let mut pending = 0usize;
-    for (wn, wave) in waves.iter().enumerate() {
-        for &i in wave {
-            let s = &steps[i];
-            let changes = s.plan()?;
-            if changes.is_empty() {
-                println!("wave {wn}  ✓ {}", s.id());
-                continue;
-            }
+    let mut failed: Option<anyhow::Error> = None;
+    parallel_ordered(steps, waves, |s| s.plan(), |wn, i, result| match result {
+        Ok(changes) if changes.is_empty() => println!("wave {wn}  ✓ {}", steps[i].id()),
+        Ok(changes) => {
             for c in changes {
                 pending += 1;
-                println!("wave {wn}  → {}: {}", s.id(), c.summary);
+                println!("wave {wn}  → {}: {}", steps[i].id(), c.summary);
                 if let Some(d) = c.diff {
                     for line in d.lines() {
                         println!("      {line}");
@@ -119,18 +160,25 @@ fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
                 }
             }
         }
+        Err(e) => {
+            eprintln!("wave {wn}  ✗ {}: {e:#}", steps[i].id());
+            failed.get_or_insert(e);
+        }
+    });
+    if let Some(e) = failed {
+        return Err(e.context("plan failed for one or more steps"));
     }
     println!("\n{pending} change(s) pending");
     Ok(())
 }
 
 fn status(steps: &[Box<dyn Step>]) -> Result<()> {
-    for s in steps {
-        match s.check()? {
-            Status::Satisfied => println!("✓ {}", s.id()),
-            Status::Pending(why) => println!("→ {} ({why})", s.id()),
-        }
-    }
+    let waves = dag::waves(steps)?;
+    parallel_ordered(steps, &waves, |s| s.check(), |_, i, result| match result {
+        Ok(Status::Satisfied) => println!("✓ {}", steps[i].id()),
+        Ok(Status::Pending(why)) => println!("→ {} ({why})", steps[i].id()),
+        Err(e) => eprintln!("✗ {} (check failed: {e:#})", steps[i].id()),
+    });
     Ok(())
 }
 
