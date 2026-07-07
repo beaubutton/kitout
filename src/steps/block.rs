@@ -117,6 +117,10 @@ impl Step for BlockInFileStep {
         &self.needs
     }
 
+    fn resource(&self) -> Option<String> {
+        Some(self.target.display().to_string())
+    }
+
     fn check(&self) -> Result<Status> {
         Ok(match self.state()? {
             State::Same => Status::Satisfied,

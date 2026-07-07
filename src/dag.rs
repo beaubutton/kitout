@@ -25,6 +25,19 @@ pub fn waves(steps: &[Box<dyn Step>]) -> Result<Vec<Vec<usize>>> {
         }
     }
 
+    // Implicit dependencies: steps mutating the same resource (same target
+    // file) are chained in manifest order so waves can never race on it.
+    let mut extra_needs: HashMap<usize, Vec<usize>> = HashMap::new();
+    let mut last_for_resource: HashMap<String, usize> = HashMap::new();
+    for (i, s) in steps.iter().enumerate() {
+        if let Some(res) = s.resource() {
+            if let Some(&prev) = last_for_resource.get(&res) {
+                extra_needs.entry(i).or_default().push(prev);
+            }
+            last_for_resource.insert(res, i);
+        }
+    }
+
     let mut placed: HashSet<usize> = HashSet::new();
     let mut result: Vec<Vec<usize>> = Vec::new();
     while placed.len() < steps.len() {
@@ -33,7 +46,12 @@ pub fn waves(steps: &[Box<dyn Step>]) -> Result<Vec<Vec<usize>>> {
             if placed.contains(&i) {
                 continue;
             }
-            if s.needs().iter().all(|n| placed.contains(&index[n.as_str()])) {
+            let explicit_ok = s.needs().iter().all(|n| placed.contains(&index[n.as_str()]));
+            let implicit_ok = extra_needs
+                .get(&i)
+                .map(|deps| deps.iter().all(|d| placed.contains(d)))
+                .unwrap_or(true);
+            if explicit_ok && implicit_ok {
                 wave.push(i);
             }
         }
@@ -61,6 +79,7 @@ mod tests {
     struct Fake {
         id: String,
         needs: Vec<String>,
+        resource: Option<String>,
     }
     impl Step for Fake {
         fn id(&self) -> &str {
@@ -68,6 +87,9 @@ mod tests {
         }
         fn needs(&self) -> &[String] {
             &self.needs
+        }
+        fn resource(&self) -> Option<String> {
+            self.resource.clone()
         }
         fn check(&self) -> Result<Status> {
             Ok(Status::Satisfied)
@@ -84,6 +106,15 @@ mod tests {
         Box::new(Fake {
             id: id.into(),
             needs: needs.iter().map(|s| s.to_string()).collect(),
+            resource: None,
+        })
+    }
+
+    fn fake_res(id: &str, res: &str) -> Box<dyn Step> {
+        Box::new(Fake {
+            id: id.into(),
+            needs: vec![],
+            resource: Some(res.into()),
         })
     }
 
@@ -104,5 +135,20 @@ mod tests {
     fn unknown_need_is_error() {
         let steps = vec![fake("a", &["ghost"])];
         assert!(waves(&steps).is_err());
+    }
+
+    #[test]
+    fn shared_resource_serializes_in_manifest_order() {
+        // Regression: five block-in-file steps on ~/.zshrc once raced in one
+        // wave and lost writes. Same-resource steps must land in distinct
+        // waves, ordered as written.
+        let steps = vec![
+            fake_res("b1", "zshrc"),
+            fake("other", &[]),
+            fake_res("b2", "zshrc"),
+            fake_res("b3", "zshrc"),
+        ];
+        let w = waves(&steps).unwrap();
+        assert_eq!(w, vec![vec![0, 1], vec![2], vec![3]]);
     }
 }

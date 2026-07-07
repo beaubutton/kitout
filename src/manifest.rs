@@ -22,6 +22,10 @@ use crate::steps::{
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
+    /// When true, `apply` collects the sudo password once (Keychain-backed
+    /// SUDO_ASKPASS for every child process) before running steps.
+    #[serde(default)]
+    pub sudo: bool,
     #[serde(default, rename = "step")]
     pub steps: Vec<StepDef>,
 }

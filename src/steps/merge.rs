@@ -105,6 +105,9 @@ impl Step for JsonMergeStep {
     fn needs(&self) -> &[String] {
         &self.needs
     }
+    fn resource(&self) -> Option<String> {
+        Some(self.target.display().to_string())
+    }
 
     fn check(&self) -> Result<Status> {
         Ok(if self.compute()?.2 {
@@ -255,6 +258,9 @@ impl Step for TomlMergeStep {
     }
     fn needs(&self) -> &[String] {
         &self.needs
+    }
+    fn resource(&self) -> Option<String> {
+        Some(self.target.display().to_string())
     }
 
     fn check(&self) -> Result<Status> {

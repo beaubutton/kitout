@@ -62,4 +62,10 @@ pub trait Step: Send + Sync {
     fn streams_output(&self) -> bool {
         false
     }
+    /// Steps that mutate a shared resource (e.g. several block-in-file steps
+    /// targeting the same file) return the same key here; the scheduler
+    /// serializes them in manifest order so parallel waves can't race.
+    fn resource(&self) -> Option<String> {
+        None
+    }
 }

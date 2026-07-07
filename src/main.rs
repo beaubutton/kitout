@@ -1,6 +1,7 @@
 mod dag;
 mod manifest;
 mod step;
+mod sudo;
 mod ui;
 mod steps {
     pub mod block;
@@ -59,6 +60,7 @@ fn main() -> Result<()> {
         .context("manifest has no parent directory")?
         .to_path_buf();
     let parsed = manifest::load(&manifest_path)?;
+    let wants_sudo = parsed.sudo;
     let steps = manifest::build_steps(parsed, &base)?;
     let waves = dag::waves(&steps)?;
 
@@ -70,6 +72,11 @@ fn main() -> Result<()> {
                 (_, true) => ConflictPolicy::ForceReplace,
                 (true, false) => ConflictPolicy::KeepLocal,
                 (false, false) => ConflictPolicy::Interactive,
+            };
+            let _sudo = if wants_sudo {
+                Some(sudo::setup(policy == ConflictPolicy::Interactive)?)
+            } else {
+                None
             };
             apply(&steps, &waves, policy)
         }
