@@ -20,4 +20,4 @@ tap = "beaubutton/homebrew-tap"
 # Publish phases: dist's homebrew publisher + our crates.io trusted-publishing job
 publish-jobs = ["homebrew", "./publish-crates"]
 # Strict gate injected into every build job: fmt, clippy -D warnings, tests
-github-build-setup = "build-setup.yml"
+github-build-setup = "../dist-build-setup.yml"
