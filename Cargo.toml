@@ -5,6 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "The agent-era workstation bootstrapper — declarative, DAG-executed machine setup"
 repository = "https://github.com/beaubutton/kitout"
+homepage = "https://github.com/beaubutton/kitout"
 keywords = ["bootstrap", "dotfiles", "provisioning", "agents", "mcp"]
 categories = ["command-line-utilities"]
 
@@ -24,3 +25,8 @@ ureq = "2"
 flate2 = "1"
 tar = "0.4"
 tempfile = "3"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

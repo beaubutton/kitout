@@ -1,0 +1,10 @@
+# Injected into every dist build job (github-build-setup): the strict gate.
+# A release build only proceeds if formatting, lints, and tests all pass on
+# the release builder itself.
+- name: Strict gate — fmt, clippy, tests
+  shell: bash
+  run: |
+    rustup component add rustfmt clippy 2>/dev/null || true
+    cargo fmt --check
+    cargo clippy --all-targets -- -D warnings
+    cargo test --release
