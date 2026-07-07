@@ -7,11 +7,11 @@ collected across Claude Code, codex, opencode, gemini, and pi) and **MCP
 server registration**.
 
 > Status: **v0.1.x — early, but real.** kitout fully manages its author's
-> machines: the 1,000-line bash script it replaced has been deleted. Ten step
-> types, strict CI (fmt, clippy, tests) on every release build, shipped on
-> Homebrew, crates.io, and GitHub Releases. Early adopters welcome — macOS
-> only until the Linux fast-follow lands, and manifest-schema changes may
-> break before 1.0 (they'll be `feat!:` commits and major-noted in releases).
+> machines. Ten step types, strict CI (fmt, clippy, tests) on every release
+> build, shipped on Homebrew, crates.io, and GitHub Releases. Early adopters
+> welcome — macOS only until the Linux fast-follow lands, and manifest-schema
+> changes may break before 1.0 (they'll be `feat!:` commits and major-noted
+> in releases).
 
 ## Install
 
