@@ -1,3 +1,8 @@
+## [0.1.3] - 2026-07-07
+
+### 🐛 Bug Fixes
+
+- Stdio mcp add puts name before variadic -e (claude CLI swallows it)
 ## [0.1.2] - 2026-07-07
 
 ### 🐛 Bug Fixes
@@ -18,6 +23,7 @@
 - Version suggestion and changelog via git-cliff, conventional commits policy
 - Enforce conventional commits via hook, agent commit rubric
 - Auto-draft commit messages from staged diffs via claude hook
+- *(release)* V0.1.2
 ## [0.1.1] - 2026-07-07
 
 ### 💼 Other
