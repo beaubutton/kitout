@@ -1,0 +1,54 @@
+# Agent-era workstation: packages, a secret, agent skills, and MCP servers.
+#
+# This is kitout's flagship use case — the coding-agent infrastructure that no
+# dotfiles tool manages. `plan`/`apply` exercise Homebrew (brewfile) and the
+# Claude Code CLI (mcp-server), so those need to be installed. `plan` is
+# read-only.
+
+sudo = true    # one password prompt up front; brew resets the sudo timestamp.
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+# A CLI tool that isn't in Homebrew: probe, install only if missing.
+[[step]]
+type = "command-if-missing"
+id = "k8s-mcp-bin"
+probe = "mcp-server-kubernetes"
+install = ["npm", "install", "-g", "@flux159/mcp-server-kubernetes"]
+needs = ["brewfile"]        # node comes from the Brewfile.
+
+# Prompt once for an API token; it lives in the login Keychain, never a file.
+[[step]]
+type = "secret"
+id = "example-token"
+service = "example-api-token"
+prompt = "Example API token"
+
+# Sync pinned agent skills across Claude Code, codex, opencode, gemini, pi.
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# stdio MCP server: a local process the agent launches.
+[[step]]
+type = "mcp-server"
+id = "mcp:kubernetes"
+name = "kubernetes"
+command = ["mcp-server-kubernetes"]
+env = { ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS = "true" }
+needs = ["brewfile", "k8s-mcp-bin"]
+
+# HTTP MCP server: a hosted endpoint. The ${...} in the header is passed
+# literally to the agent config for the agent to expand at runtime — the token
+# value never lands in a file kitout writes.
+[[step]]
+type = "mcp-server"
+id = "mcp:example"
+name = "example"
+url = "https://mcp.example.com/mcp"
+headers = { Authorization = "Bearer ${EXAMPLE_API_TOKEN}" }
+needs = ["brewfile", "example-token"]

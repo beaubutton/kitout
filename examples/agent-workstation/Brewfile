@@ -1,0 +1,7 @@
+# Managed by the `brewfile` step. `brew bundle` installs everything here;
+# any tap declared with `tap "..."` is trusted first.
+brew "node"          # runtime for the stdio MCP server below
+brew "ripgrep"
+brew "fd"
+brew "jq"
+cask "ghostty"

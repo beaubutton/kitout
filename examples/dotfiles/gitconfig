@@ -1,0 +1,13 @@
+[user]
+	name = Your Name
+	email = you@example.com
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[push]
+	autoSetupRemote = true
+[alias]
+	st = status
+	co = checkout
+	lg = log --oneline --graph --decorate

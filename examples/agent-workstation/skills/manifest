@@ -1,0 +1,10 @@
+# Agent skills, one per line:  name | source | targets
+#
+# source  — a raw SKILL.md URL, or a GitHub owner/repo[@ref][:path] (pin @ref
+#           to a reviewed commit SHA so installs are reproducible).
+# targets — comma-separated: claude, pi, shared (codex/opencode/gemini), or all.
+#
+# Uncomment and replace with real, reviewed skills. Format examples:
+#
+# mcp-builder   | anthropics/skills@<reviewed-sha>:mcp-builder        | claude,shared
+# code-reviewer | https://example.com/skills/code-reviewer/SKILL.md   | all

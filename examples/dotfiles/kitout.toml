@@ -1,0 +1,43 @@
+# Personal dotfiles + macOS defaults.
+#
+# Illustrative — read it and adapt it. `kitout -m examples/dotfiles/kitout.toml
+# plan` is read-only and safe. This manifest targets real files under ~, so
+# review the plan before you apply; the file step defaults to prompting with a
+# diff before it overwrites anything.
+
+[[step]]
+type = "file"
+id = "gitconfig"
+source = "gitconfig"
+target = "~/.gitconfig"
+# on-conflict defaults to "prompt-diff": show a diff and ask before overwriting.
+
+[[step]]
+type = "block-in-file"
+id = "zsh-aliases"
+target = "~/.zshrc"
+marker = "dotfiles:aliases"
+block = '''
+alias ll='ls -lah'
+alias gs='git status'
+alias ..='cd ..'
+'''
+
+[[step]]
+type = "toml-merge"
+id = "starship"
+target = "~/.config/starship.toml"
+mode = "seed"          # only add keys that are absent; your own edits survive.
+value = { add_newline = false, command_timeout = 1000 }
+
+[[step]]
+type = "defaults"
+id = "macos-prefs"
+kill = ["Dock", "Finder"]        # restarted only if a key actually changed.
+write = [
+  { domain = "com.apple.dock",   key = "autohide",     value = true },
+  { domain = "com.apple.dock",   key = "show-recents", value = false },
+  { domain = "com.apple.finder", key = "ShowPathbar",  value = true },
+  { domain = "NSGlobalDomain",   key = "AppleShowAllExtensions", value = true },
+  { domain = "NSGlobalDomain",   key = "KeyRepeat",    value = 2 },
+]
