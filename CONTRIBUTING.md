@@ -18,7 +18,10 @@ kitout is young — issues and PRs are welcome.
     explicit interactive confirmation or `--force-replace`.
   - Steps must be idempotent, and steps mutating a shared file must report
     it via `resource()` so the scheduler serializes them.
-- One logical change per PR.
+- One logical change per PR, described with a [Conventional Commit](https://www.conventionalcommits.org)
+  message (`feat:`, `fix:`, `docs:`, `chore:`; `feat!:` for anything breaking —
+  including changes to the kitout.toml manifest schema). These drive
+  `make version` (next-version suggestion) and the changelog.
 
 ## Dev loop
 
