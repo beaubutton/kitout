@@ -49,7 +49,7 @@ release: ## Cut a release: make release VERSION=X.Y.Z (CI does the rest)
 	cargo build --release
 	git cliff --tag "v$(VERSION)" -o CHANGELOG.md
 	git add Cargo.toml Cargo.lock CHANGELOG.md
-	git commit -m "v$(VERSION)"
+	git commit -m "chore(release): v$(VERSION)"
 	git tag "v$(VERSION)"
 	git push origin main "v$(VERSION)"
 	@echo "→ v$(VERSION) is in CI's hands: strict gate → binaries → GitHub Release → tap → crates.io"
