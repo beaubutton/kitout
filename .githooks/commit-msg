@@ -1,0 +1,24 @@
+#!/bin/sh
+# Enforce Conventional Commits (https://www.conventionalcommits.org).
+# Install once per clone: `make hooks`
+msg_file="$1"
+subject="$(head -1 "$msg_file")"
+
+# Merges, reverts-by-git, and fixup/squash commits pass through.
+case "$subject" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *) exit 0 ;;
+esac
+
+if ! printf '%s' "$subject" | grep -qE '^(feat|fix|docs|chore|refactor|test|build|ci|perf|style|revert)(\([a-z0-9./-]+\))?!?: .+'; then
+  echo "✗ commit message must follow Conventional Commits:" >&2
+  echo "    type(scope)!: subject" >&2
+  echo "  types: feat fix docs chore refactor test build ci perf style revert" >&2
+  echo "  breaking changes (incl. manifest-schema changes): feat!: …" >&2
+  echo "  yours: $subject" >&2
+  exit 1
+fi
+
+if [ "$(printf '%s' "$subject" | wc -c)" -gt 72 ]; then
+  echo "✗ subject line is longer than 72 characters" >&2
+  exit 1
+fi

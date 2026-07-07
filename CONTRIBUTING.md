@@ -23,6 +23,11 @@ kitout is young — issues and PRs are welcome.
   including changes to the kitout.toml manifest schema). These drive
   `make version` (next-version suggestion) and the changelog.
 
+## Setup
+
+Run `make hooks` once per clone — it installs the commit-msg hook that
+enforces the commit convention below.
+
 ## Dev loop
 
 ```bash

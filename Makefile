@@ -1,7 +1,7 @@
 # kitout development & release automation.
 # `make` / `make help` lists targets.
 
-.PHONY: help check fmt test build install demo plan version changelog release
+.PHONY: help check fmt test build install demo plan version changelog release hooks
 
 help: ## List available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -28,6 +28,10 @@ demo: ## Run the toy manifest end-to-end (plan)
 
 plan: ## Preview what a release would produce
 	dist plan
+
+hooks: ## Install the commit-msg hook (conventional commits enforcement)
+	git config core.hooksPath .githooks
+	@echo "hooks installed (core.hooksPath = .githooks)"
 
 version: ## Suggest the next version from conventional commits
 	@git cliff --bumped-version
