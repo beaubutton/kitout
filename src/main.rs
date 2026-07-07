@@ -106,6 +106,7 @@ fn needs_chain(steps: &[Box<dyn Step>], id: &str) -> Result<std::collections::Ha
 fn parallel_ordered<R: Send>(
     steps: &[Box<dyn Step>],
     waves: &[Vec<usize>],
+    verb: &str,
     f: impl Fn(&dyn Step) -> R + Sync,
     mut print: impl FnMut(usize, usize, R),
 ) {
@@ -114,14 +115,19 @@ fn parallel_ordered<R: Send>(
         .enumerate()
         .flat_map(|(wn, w)| w.iter().map(move |&i| (wn, i)))
         .collect();
+    let mp = indicatif::MultiProgress::new();
+    ui::set_progress(mp.clone());
     std::thread::scope(|scope| {
         let (tx, rx) = std::sync::mpsc::channel::<(usize, R)>();
         for &(_, i) in &order {
             let tx = tx.clone();
             let f = &f;
             let step = &steps[i];
+            let pb = ui::spinner(&mp, verb, step.id());
             scope.spawn(move || {
-                let _ = tx.send((i, f(step.as_ref())));
+                let r = f(step.as_ref());
+                pb.finish_and_clear();
+                let _ = tx.send((i, r));
             });
         }
         drop(tx);
@@ -142,6 +148,7 @@ fn parallel_ordered<R: Send>(
             print(wn, i, r);
         }
     });
+    ui::clear_progress();
 }
 
 fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
@@ -149,13 +156,13 @@ fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
     ui::note(&format!("planning {} step(s) across {} wave(s)…", steps.len(), waves.len()));
     let mut pending = 0usize;
     let mut failed: Option<anyhow::Error> = None;
-    parallel_ordered(steps, waves, |s| s.plan(), |wn, i, result| {
+    parallel_ordered(steps, waves, "planning", |s| s.plan(), |wn, i, result| {
         let wave = style(format!("wave {wn}")).dim();
         match result {
-            Ok(changes) if changes.is_empty() => {
+            Ok(changes) if changes.is_empty() => ui::sync(|| {
                 println!("{wave}  {} {}", style("✓").green().bold(), steps[i].id())
-            }
-            Ok(changes) => {
+            }),
+            Ok(changes) => ui::sync(|| {
                 for c in changes {
                     pending += 1;
                     println!(
@@ -171,7 +178,7 @@ fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
                         }
                     }
                 }
-            }
+            }),
             Err(e) => {
                 ui::fail(steps[i].id(), &format!("{e:#}"));
                 failed.get_or_insert(e);
@@ -191,7 +198,7 @@ fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
 
 fn status(steps: &[Box<dyn Step>]) -> Result<()> {
     let waves = dag::waves(steps)?;
-    parallel_ordered(steps, &waves, |s| s.check(), |_, i, result| match result {
+    parallel_ordered(steps, &waves, "checking", |s| s.check(), |_, i, result| match result {
         Ok(Status::Satisfied) => ui::ok(steps[i].id(), "", None),
         Ok(Status::Pending(why)) => ui::pending(steps[i].id(), &why),
         Err(e) => ui::fail(steps[i].id(), &format!("check failed: {e:#}")),
@@ -223,19 +230,28 @@ fn apply(steps: &[Box<dyn Step>], waves: &[Vec<usize>], policy: ConflictPolicy) 
         let results: Vec<StepResult> = if policy == ConflictPolicy::Interactive {
             wave.iter().map(|&i| run(i)).collect()
         } else {
-            std::thread::scope(|scope| {
+            let mp = indicatif::MultiProgress::new();
+            ui::set_progress(mp.clone());
+            let results = std::thread::scope(|scope| {
                 let handles: Vec<_> = wave
                     .iter()
                     .map(|&i| {
                         let run = &run;
-                        scope.spawn(move || run(i))
+                        let pb = ui::spinner(&mp, "applying", steps[i].id());
+                        scope.spawn(move || {
+                            let r = run(i);
+                            pb.finish_and_clear();
+                            r
+                        })
                     })
                     .collect();
                 handles
                     .into_iter()
                     .map(|h| h.join().expect("step thread panicked"))
                     .collect()
-            })
+            });
+            ui::clear_progress();
+            results
         };
 
         let mut wave_failed = false;
