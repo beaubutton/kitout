@@ -10,6 +10,13 @@ server registration**.
 > plan/apply/status) and ten step types work — including the flagship
 > `skills` and `mcp-server`. Not yet ready for strangers.
 
+## Install
+
+```bash
+brew install beaubutton/tap/kitout   # macOS, prebuilt binary
+cargo install kitout                 # anywhere with a Rust toolchain
+```
+
 ## The idea
 
 ```toml
