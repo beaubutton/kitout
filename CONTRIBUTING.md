@@ -25,8 +25,11 @@ kitout is young — issues and PRs are welcome.
 
 ## Setup
 
-Run `make hooks` once per clone — it installs the commit-msg hook that
-enforces the commit convention below.
+Run `make hooks` once per clone. It installs two git hooks: `commit-msg`
+(enforces the convention below) and `prepare-commit-msg` (drafts a
+conventional message from your staged diff via Claude when you run a plain
+`git commit` — review/edit it in the editor as usual; `git commit -m` is
+never touched).
 
 ## Dev loop
 

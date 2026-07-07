@@ -1,0 +1,27 @@
+#!/bin/sh
+# Auto-draft a Conventional Commit message from the staged diff using Claude.
+# Applies only to plain `git commit` (editor flow): -m messages, merges,
+# amends, and squashes pass through untouched, and if claude is missing or
+# fails the editor simply opens empty. The commit-msg hook still validates
+# whatever ends up being committed.
+msg_file="$1"
+source="$2"
+
+[ -n "$source" ] && [ "$source" != "template" ] && exit 0
+command -v claude >/dev/null 2>&1 || exit 0
+git diff --cached --quiet && exit 0
+
+# Don't clobber a message that already has content
+if [ -n "$(grep -vE '^#|^$' "$msg_file" 2>/dev/null | head -1)" ]; then
+  exit 0
+fi
+
+draft="$( (git diff --cached --stat; echo; git diff --cached | head -c 30000) 2>/dev/null)"
+msg="$(printf '%s' "$draft" | claude -p --model haiku "Write a Conventional Commit message for this staged diff from the kitout repo (Rust workstation-bootstrap CLI). Rules: first line 'type(optional-scope)!: subject', subject <=72 chars, imperative mood; types: feat fix docs chore refactor test build ci; use feat!: when src/manifest.rs schema, CLI flags, or apply semantics change in ways that could break existing kitout.toml manifests or machines; optionally a short body after a blank line explaining why; NO trailers, NO attribution lines, NO markdown fences. Output ONLY the commit message." 2>/dev/null)"
+
+[ -n "$msg" ] || exit 0
+tmp="$(mktemp)"
+printf '%s\n\n' "$msg" > "$tmp"
+cat "$msg_file" >> "$tmp"
+mv "$tmp" "$msg_file"
+exit 0
