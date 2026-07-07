@@ -22,7 +22,14 @@ pub struct SecretStep {
 impl SecretStep {
     fn present(&self) -> Result<bool> {
         let status = Command::new("security")
-            .args(["find-generic-password", "-a", &self.account, "-s", &self.service, "-w"])
+            .args([
+                "find-generic-password",
+                "-a",
+                &self.account,
+                "-s",
+                &self.service,
+                "-w",
+            ])
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
             .status()
@@ -55,7 +62,10 @@ impl Step for SecretStep {
             vec![]
         } else {
             vec![Change {
-                summary: format!("prompt for '{}' and stash in the login Keychain", self.service),
+                summary: format!(
+                    "prompt for '{}' and stash in the login Keychain",
+                    self.service
+                ),
                 diff: None,
             }]
         })
@@ -78,10 +88,21 @@ impl Step for SecretStep {
                 .interact()
         })?;
         if value.is_empty() {
-            return Ok(Applied::Kept("skipped — no value entered (re-run to add)".into()));
+            return Ok(Applied::Kept(
+                "skipped — no value entered (re-run to add)".into(),
+            ));
         }
         let status = Command::new("security")
-            .args(["add-generic-password", "-a", &self.account, "-s", &self.service, "-U", "-w", &value])
+            .args([
+                "add-generic-password",
+                "-a",
+                &self.account,
+                "-s",
+                &self.service,
+                "-U",
+                "-w",
+                &value,
+            ])
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
             .status()

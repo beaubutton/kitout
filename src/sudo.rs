@@ -60,7 +60,16 @@ pub fn setup(interactive: bool) -> Result<SudoGuard> {
                 .interact()
         })?;
         let stored = Command::new("security")
-            .args(["add-generic-password", "-a", &user, "-s", SERVICE, "-U", "-w", &pw])
+            .args([
+                "add-generic-password",
+                "-a",
+                &user,
+                "-s",
+                SERVICE,
+                "-U",
+                "-w",
+                &pw,
+            ])
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
             .status()

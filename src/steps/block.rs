@@ -26,8 +26,8 @@ pub struct BlockInFileStep {
 
 enum State {
     FileMissing,
-    BlockMissing(String),          // current content
-    BlockDiffers(String, String),  // current content, current inner
+    BlockMissing,
+    BlockDiffers(String, String), // current content, current inner
     Same,
 }
 
@@ -55,7 +55,7 @@ impl BlockInFileStep {
         let begin = lines.iter().position(|l| l.trim() == self.begin());
         let end = lines.iter().position(|l| l.trim() == self.end());
         match (begin, end) {
-            (None, None) => Ok(State::BlockMissing(raw)),
+            (None, None) => Ok(State::BlockMissing),
             (Some(b), Some(e)) if b < e => {
                 let inner = lines[b + 1..e].join("\n");
                 if inner == self.body() {
@@ -124,7 +124,7 @@ impl Step for BlockInFileStep {
     fn check(&self) -> Result<Status> {
         Ok(match self.state()? {
             State::Same => Status::Satisfied,
-            State::FileMissing | State::BlockMissing(_) => Status::Pending("add managed block".into()),
+            State::FileMissing | State::BlockMissing => Status::Pending("add managed block".into()),
             State::BlockDiffers(..) => Status::Pending("managed block differs".into()),
         })
     }
@@ -132,7 +132,7 @@ impl Step for BlockInFileStep {
     fn plan(&self) -> Result<Vec<Change>> {
         Ok(match self.state()? {
             State::Same => vec![],
-            State::FileMissing | State::BlockMissing(_) => vec![Change {
+            State::FileMissing | State::BlockMissing => vec![Change {
                 summary: format!("add block '{}' to {}", self.marker, self.target.display()),
                 diff: None,
             }],
@@ -140,10 +140,17 @@ impl Step for BlockInFileStep {
                 let body = self.body();
                 let diff = similar::TextDiff::from_lines(&inner, &body)
                     .unified_diff()
-                    .header(&format!("{} (block '{}')", self.target.display(), self.marker), "manifest")
+                    .header(
+                        &format!("{} (block '{}')", self.target.display(), self.marker),
+                        "manifest",
+                    )
                     .to_string();
                 vec![Change {
-                    summary: format!("update block '{}' in {}", self.marker, self.target.display()),
+                    summary: format!(
+                        "update block '{}' in {}",
+                        self.marker,
+                        self.target.display()
+                    ),
                     diff: Some(diff),
                 }]
             }
@@ -153,7 +160,7 @@ impl Step for BlockInFileStep {
     fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
         match self.state()? {
             State::Same => Ok(Applied::Unchanged("block already current".into())),
-            State::FileMissing | State::BlockMissing(_) => {
+            State::FileMissing | State::BlockMissing => {
                 self.write_with_block(None)?;
                 Ok(Applied::Changed(format!(
                     "added block '{}' to {}",

@@ -67,7 +67,10 @@ fn parse_manifest(raw: &str) -> Result<Vec<Entry>> {
         }
         let parts: Vec<&str> = line.split('|').map(str::trim).collect();
         if parts.len() != 3 || parts.iter().any(|p| p.is_empty()) {
-            bail!("skills manifest line {}: expected `name | source | targets`", ln + 1);
+            bail!(
+                "skills manifest line {}: expected `name | source | targets`",
+                ln + 1
+            );
         }
         let targets: Vec<Target> = if parts[2] == "all" {
             vec![Target::Claude, Target::Pi, Target::Shared]
@@ -138,7 +141,9 @@ fn fetch_url(url: &str) -> Result<Vec<u8>> {
         .call()
         .with_context(|| format!("GET {url}"))?;
     let mut buf = Vec::new();
-    resp.into_reader().take(200 * 1024 * 1024).read_to_end(&mut buf)?;
+    resp.into_reader()
+        .take(200 * 1024 * 1024)
+        .read_to_end(&mut buf)?;
     Ok(buf)
 }
 
@@ -188,13 +193,19 @@ fn fetch_all(sources: &[String], tmp: &Path) -> Fetched {
         }
     }
 
-    let mut fetched = Fetched { raw: HashMap::new(), repos: HashMap::new() };
+    let mut fetched = Fetched {
+        raw: HashMap::new(),
+        repos: HashMap::new(),
+    };
     std::thread::scope(|scope| {
         let raw_handles: Vec<_> = raw_urls
             .iter()
             .map(|url| {
                 let url = url.to_string();
-                (url.clone(), scope.spawn(move || fetch_url(&url).map_err(|e| format!("{e:#}"))))
+                (
+                    url.clone(),
+                    scope.spawn(move || fetch_url(&url).map_err(|e| format!("{e:#}"))),
+                )
             })
             .collect();
         let repo_handles: Vec<_> = repo_keys
@@ -202,28 +213,35 @@ fn fetch_all(sources: &[String], tmp: &Path) -> Fetched {
             .map(|(key, (repo, gitref))| {
                 let (key, repo, gitref) = (key.clone(), repo.clone(), gitref.clone());
                 let out = tmp.join(key.replace(['/', '@'], "__"));
-                (key.clone(), scope.spawn(move || -> Result<PathBuf, String> {
-                    let url = format!("https://codeload.github.com/{repo}/tar.gz/{gitref}");
-                    let bytes = fetch_url(&url).map_err(|e| format!("{e:#}"))?;
-                    fs::create_dir_all(&out).map_err(|e| e.to_string())?;
-                    tar::Archive::new(flate2::read::GzDecoder::new(&bytes[..]))
-                        .unpack(&out)
-                        .map_err(|e| format!("extracting tarball for {key}: {e}"))?;
-                    // tarball root is <repo>-<ref-ish>; locate, don't predict
-                    fs::read_dir(&out)
-                        .map_err(|e| e.to_string())?
-                        .filter_map(|e| e.ok())
-                        .map(|e| e.path())
-                        .find(|p| p.is_dir())
-                        .ok_or_else(|| "tarball contained no directory".to_string())
-                }))
+                (
+                    key.clone(),
+                    scope.spawn(move || -> Result<PathBuf, String> {
+                        let url = format!("https://codeload.github.com/{repo}/tar.gz/{gitref}");
+                        let bytes = fetch_url(&url).map_err(|e| format!("{e:#}"))?;
+                        fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+                        tar::Archive::new(flate2::read::GzDecoder::new(&bytes[..]))
+                            .unpack(&out)
+                            .map_err(|e| format!("extracting tarball for {key}: {e}"))?;
+                        // tarball root is <repo>-<ref-ish>; locate, don't predict
+                        fs::read_dir(&out)
+                            .map_err(|e| e.to_string())?
+                            .filter_map(|e| e.ok())
+                            .map(|e| e.path())
+                            .find(|p| p.is_dir())
+                            .ok_or_else(|| "tarball contained no directory".to_string())
+                    }),
+                )
             })
             .collect();
         for (url, h) in raw_handles {
-            fetched.raw.insert(url, h.join().expect("fetch thread panicked"));
+            fetched
+                .raw
+                .insert(url, h.join().expect("fetch thread panicked"));
         }
         for (key, h) in repo_handles {
-            fetched.repos.insert(key, h.join().expect("fetch thread panicked"));
+            fetched
+                .repos
+                .insert(key, h.join().expect("fetch thread panicked"));
         }
     });
     fetched
@@ -232,7 +250,9 @@ fn fetch_all(sources: &[String], tmp: &Path) -> Fetched {
 /// Assemble a skill's tree from the pre-fetched caches.
 fn stage(source: &str, fetched: &Fetched) -> Result<SkillTree> {
     if is_url(source) {
-        let bytes = fetched.raw[source].clone().map_err(|e| anyhow::anyhow!(e))?;
+        let bytes = fetched.raw[source]
+            .clone()
+            .map_err(|e| anyhow::anyhow!(e))?;
         let mut tree = SkillTree::new();
         tree.insert(PathBuf::from("SKILL.md"), bytes);
         if !valid_frontmatter(&tree) {
@@ -243,13 +263,18 @@ fn stage(source: &str, fetched: &Fetched) -> Result<SkillTree> {
 
     let (repo, gitref, subpath) = parse_repo_source(source);
     let key = format!("{repo}@{gitref}");
-    let extracted = fetched.repos[&key].clone().map_err(|e| anyhow::anyhow!(e))?;
+    let extracted = fetched.repos[&key]
+        .clone()
+        .map_err(|e| anyhow::anyhow!(e))?;
     let skill_dir = match subpath {
         Some(p) => extracted.join(p),
         None => extracted,
     };
     if !skill_dir.is_dir() {
-        bail!("path '{}' not found in {repo}@{gitref}", subpath.unwrap_or("."));
+        bail!(
+            "path '{}' not found in {repo}@{gitref}",
+            subpath.unwrap_or(".")
+        );
     }
     let tree = read_tree(&skill_dir)?;
     if !valid_frontmatter(&tree) {
@@ -272,7 +297,9 @@ struct SyncPlan {
 
 impl SkillsStep {
     fn home(&self) -> Result<PathBuf> {
-        std::env::var("HOME").map(PathBuf::from).context("HOME not set")
+        std::env::var("HOME")
+            .map(PathBuf::from)
+            .context("HOME not set")
     }
 
     fn compute(&self) -> Result<SyncPlan> {
@@ -292,7 +319,10 @@ impl SkillsStep {
             let staged = match stage(&e.source, &fetched) {
                 Ok(t) => Some(t),
                 Err(err) => {
-                    warnings.push(format!("skill {} — fetch failed ({err:#}); keeping existing copies", e.name));
+                    warnings.push(format!(
+                        "skill {} — fetch failed ({err:#}); keeping existing copies",
+                        e.name
+                    ));
                     None
                 }
             };
@@ -313,20 +343,29 @@ impl SkillsStep {
                 }
                 let p = PathBuf::from(line);
                 if line.contains("..") {
-                    warnings.push(format!("state lists suspicious path '{line}' — not removing"));
+                    warnings.push(format!(
+                        "state lists suspicious path '{line}' — not removing"
+                    ));
                 } else if bases.iter().any(|b| p.starts_with(b) && p != *b) {
                     if p.is_dir() {
                         removals.push(p);
                     }
                 } else {
-                    warnings.push(format!("state lists unexpected path '{line}' — not removing"));
+                    warnings.push(format!(
+                        "state lists unexpected path '{line}' — not removing"
+                    ));
                 }
             }
         }
 
         // The tempdir must outlive staging reads; trees are already in memory.
         drop(tmp);
-        Ok(SyncPlan { actions, claimed, removals, warnings })
+        Ok(SyncPlan {
+            actions,
+            claimed,
+            removals,
+            warnings,
+        })
     }
 }
 
@@ -354,7 +393,11 @@ impl Step for SkillsStep {
             match staged {
                 None => {}
                 Some(tree) => {
-                    let current = if dest.is_dir() { read_tree(dest).ok() } else { None };
+                    let current = if dest.is_dir() {
+                        read_tree(dest).ok()
+                    } else {
+                        None
+                    };
                     if current.as_ref() != Some(tree) {
                         changes.push(Change {
                             summary: format!("skill {name}: install/update {label} copy"),
@@ -371,7 +414,10 @@ impl Step for SkillsStep {
             });
         }
         for w in &plan.warnings {
-            changes.push(Change { summary: format!("⚠ {w}"), diff: None });
+            changes.push(Change {
+                summary: format!("⚠ {w}"),
+                diff: None,
+            });
         }
         Ok(changes)
     }
@@ -386,7 +432,11 @@ impl Step for SkillsStep {
         let mut current: BTreeMap<String, Vec<&str>> = BTreeMap::new();
         for (name, label, dest, staged) in &plan.actions {
             let Some(tree) = staged else { continue };
-            let existing = if dest.is_dir() { read_tree(dest).ok() } else { None };
+            let existing = if dest.is_dir() {
+                read_tree(dest).ok()
+            } else {
+                None
+            };
             if existing.as_ref() == Some(tree) {
                 current.entry(name.clone()).or_default().push(label);
             } else {
@@ -409,13 +459,29 @@ impl Step for SkillsStep {
         state.sort();
         fs::write(
             &self.state_file,
-            state.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n") + "\n",
+            state
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join("\n")
+                + "\n",
         )?;
         let removed = plan.removals.len();
         let summary = match (updated.len(), removed) {
-            (0, 0) => return Ok(Applied::Unchanged(format!("all {} skills up to date", current.len()))),
-            (u, 0) => format!("{u} skill(s) installed/updated, {} up to date", current.len()),
-            (u, r) => format!("{u} skill(s) installed/updated, {r} removed, {} up to date", current.len()),
+            (0, 0) => {
+                return Ok(Applied::Unchanged(format!(
+                    "all {} skills up to date",
+                    current.len()
+                )))
+            }
+            (u, 0) => format!(
+                "{u} skill(s) installed/updated, {} up to date",
+                current.len()
+            ),
+            (u, r) => format!(
+                "{u} skill(s) installed/updated, {r} removed, {} up to date",
+                current.len()
+            ),
         };
         Ok(Applied::Changed(summary))
     }
@@ -427,10 +493,14 @@ mod tests {
 
     #[test]
     fn parses_entries_and_targets() {
-        let raw = "# comment\n\nherdr | https://x/SKILL.md | all\nfoo | o/r@abc:p/q | claude,shared\n";
+        let raw =
+            "# comment\n\nherdr | https://x/SKILL.md | all\nfoo | o/r@abc:p/q | claude,shared\n";
         let e = parse_manifest(raw).unwrap();
         assert_eq!(e.len(), 2);
-        assert_eq!(e[0].targets, vec![Target::Claude, Target::Pi, Target::Shared]);
+        assert_eq!(
+            e[0].targets,
+            vec![Target::Claude, Target::Pi, Target::Shared]
+        );
         assert_eq!(e[1].targets, vec![Target::Claude, Target::Shared]);
     }
 

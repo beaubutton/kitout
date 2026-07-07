@@ -64,7 +64,9 @@ impl Step for McpServerStep {
 
     fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
         if self.registered()? {
-            return Ok(Applied::Unchanged("already registered with Claude Code".into()));
+            return Ok(Applied::Unchanged(
+                "already registered with Claude Code".into(),
+            ));
         }
         let mut cmd = Command::new("claude");
         cmd.args(["mcp", "add", "--scope", "user"]);
@@ -88,6 +90,8 @@ impl Step for McpServerStep {
             crate::ui::dump_tail(&output, 10);
             bail!("claude mcp add {} failed (output above)", self.name);
         }
-        Ok(Applied::Changed("registered with Claude Code (user scope)".into()))
+        Ok(Applied::Changed(
+            "registered with Claude Code (user scope)".into(),
+        ))
     }
 }

@@ -59,7 +59,11 @@ pub fn ok(id: &str, summary: &str, dur: Option<Duration>) {
             "{} {}{}{}",
             style("✓").green().bold(),
             style(id).bold(),
-            if summary.is_empty() { String::new() } else { format!(" {} {}", style("—").dim(), summary) },
+            if summary.is_empty() {
+                String::new()
+            } else {
+                format!(" {} {}", style("—").dim(), summary)
+            },
             fmt_dur(dur)
         )
     });
@@ -71,7 +75,11 @@ pub fn changed(id: &str, summary: &str, dur: Option<Duration>) {
             "{} {}{}{}",
             style("+").cyan().bold(),
             style(id).bold(),
-            if summary.is_empty() { String::new() } else { format!(" {} {}", style("—").dim(), summary) },
+            if summary.is_empty() {
+                String::new()
+            } else {
+                format!(" {} {}", style("—").dim(), summary)
+            },
             fmt_dur(dur)
         )
     });
@@ -79,7 +87,13 @@ pub fn changed(id: &str, summary: &str, dur: Option<Duration>) {
 
 pub fn pending(id: &str, what: &str) {
     with_progress(|| {
-        println!("{} {} {} {}", style("→").yellow().bold(), style(id).bold(), style("—").dim(), what)
+        println!(
+            "{} {} {} {}",
+            style("→").yellow().bold(),
+            style(id).bold(),
+            style("—").dim(),
+            what
+        )
     });
 }
 
@@ -89,7 +103,13 @@ pub fn warn(msg: &str) {
 
 pub fn fail(id: &str, err: &str) {
     with_progress(|| {
-        eprintln!("{} {} {} {}", style("✗").red().bold(), style(id).bold(), style("—").dim(), err)
+        eprintln!(
+            "{} {} {} {}",
+            style("✗").red().bold(),
+            style(id).bold(),
+            style("—").dim(),
+            err
+        )
     });
 }
 
@@ -103,7 +123,14 @@ pub fn note(msg: &str) {
 
 /// Announce a step whose output streams to the terminal (scripts, prompts).
 pub fn stream_banner(id: &str) {
-    with_progress(|| println!("{}", style(format!("── {id} ──────────────────────")).blue().bold()));
+    with_progress(|| {
+        println!(
+            "{}",
+            style(format!("── {id} ──────────────────────"))
+                .blue()
+                .bold()
+        )
+    });
 }
 
 /// Dimmed tail of captured child output, for failures.
@@ -112,7 +139,10 @@ pub fn dump_tail(output: &str, lines: usize) {
         let all: Vec<&str> = output.lines().collect();
         let start = all.len().saturating_sub(lines);
         if start > 0 {
-            eprintln!("    {}", style(format!("… ({start} earlier lines hidden)")).dim());
+            eprintln!(
+                "    {}",
+                style(format!("… ({start} earlier lines hidden)")).dim()
+            );
         }
         for line in &all[start..] {
             eprintln!("    {}", style(line).dim());
@@ -125,7 +155,9 @@ fn fmt_dur(dur: Option<Duration>) -> String {
         Some(d) if d.as_secs() >= 1 => {
             let s = d.as_secs();
             if s >= 60 {
-                style(format!("  ({}m{:02}s)", s / 60, s % 60)).dim().to_string()
+                style(format!("  ({}m{:02}s)", s / 60, s % 60))
+                    .dim()
+                    .to_string()
             } else {
                 style(format!("  ({s}s)")).dim().to_string()
             }

@@ -37,13 +37,17 @@ fn toml_to_json(v: &toml::Value) -> serde_json::Value {
     match v {
         toml::Value::String(s) => J::String(s.clone()),
         toml::Value::Integer(i) => J::from(*i),
-        toml::Value::Float(f) => serde_json::Number::from_f64(*f).map(J::Number).unwrap_or(J::Null),
+        toml::Value::Float(f) => serde_json::Number::from_f64(*f)
+            .map(J::Number)
+            .unwrap_or(J::Null),
         toml::Value::Boolean(b) => J::Bool(*b),
         toml::Value::Datetime(d) => J::String(d.to_string()),
         toml::Value::Array(a) => J::Array(a.iter().map(toml_to_json).collect()),
-        toml::Value::Table(t) => {
-            J::Object(t.iter().map(|(k, v)| (k.clone(), toml_to_json(v))).collect())
-        }
+        toml::Value::Table(t) => J::Object(
+            t.iter()
+                .map(|(k, v)| (k.clone(), toml_to_json(v)))
+                .collect(),
+        ),
     }
 }
 
@@ -93,7 +97,11 @@ impl JsonMergeStep {
             Err(e) => return Err(e).context("reading target")?,
         };
         let mut merged = current.clone();
-        let changed = merge_json(&mut merged, &toml_to_json(&self.value), self.mode == MergeMode::Seed);
+        let changed = merge_json(
+            &mut merged,
+            &toml_to_json(&self.value),
+            self.mode == MergeMode::Seed,
+        );
         Ok((current, merged, changed))
     }
 }
@@ -143,7 +151,10 @@ impl Step for JsonMergeStep {
             fs::create_dir_all(parent)?;
         }
         fs::write(&self.target, serde_json::to_string_pretty(&merged)? + "\n")?;
-        Ok(Applied::Changed(format!("merged keys into {}", self.target.display())))
+        Ok(Applied::Changed(format!(
+            "merged keys into {}",
+            self.target.display()
+        )))
     }
 }
 
@@ -167,9 +178,8 @@ fn to_item(v: &toml::Value) -> toml_edit::Item {
         toml::Value::Array(a) => {
             let mut arr = toml_edit::Array::new();
             for x in a {
-                match to_item(x) {
-                    toml_edit::Item::Value(val) => arr.push(val),
-                    _ => {}
+                if let toml_edit::Item::Value(val) = to_item(x) {
+                    arr.push(val)
                 }
             }
             toml_edit::value(arr)
@@ -192,11 +202,17 @@ fn item_eq(item: &toml_edit::Item, v: &toml::Value) -> bool {
         toml_edit::Item::Table(t) => format!("[x]\n{t}"),
         _ => return false,
     };
-    let Ok(parsed) = rendered.parse::<toml::Table>() else { return false };
+    let Ok(parsed) = rendered.parse::<toml::Table>() else {
+        return false;
+    };
     parsed.get("x") == Some(v)
 }
 
-fn merge_toml(dst: &mut toml_edit::Table, src: &toml::map::Map<String, toml::Value>, seed: bool) -> bool {
+fn merge_toml(
+    dst: &mut toml_edit::Table,
+    src: &toml::map::Map<String, toml::Value>,
+    seed: bool,
+) -> bool {
     let mut changed = false;
     for (k, v) in src {
         match v {
@@ -296,7 +312,10 @@ impl Step for TomlMergeStep {
             fs::create_dir_all(parent)?;
         }
         fs::write(&self.target, doc.to_string())?;
-        Ok(Applied::Changed(format!("merged keys into {}", self.target.display())))
+        Ok(Applied::Changed(format!(
+            "merged keys into {}",
+            self.target.display()
+        )))
     }
 }
 
@@ -321,7 +340,8 @@ mod tests {
             value: tval(r#"statusLine = { type = "command", padding = 0 }"#),
         };
         s.apply(ConflictPolicy::KeepLocal).unwrap();
-        let out: serde_json::Value = serde_json::from_str(&fs::read_to_string(&target).unwrap()).unwrap();
+        let out: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&target).unwrap()).unwrap();
         assert_eq!(out["theme"], "dark");
         assert_eq!(out["statusLine"]["type"], "command");
         assert_eq!(out["statusLine"]["padding"], 0);
@@ -341,7 +361,8 @@ mod tests {
             value: tval(r#"ui = { footer = { items = ["a", "b"], showLabels = true } }"#),
         };
         s.apply(ConflictPolicy::KeepLocal).unwrap();
-        let out: serde_json::Value = serde_json::from_str(&fs::read_to_string(&target).unwrap()).unwrap();
+        let out: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&target).unwrap()).unwrap();
         assert_eq!(out["ui"]["footer"]["items"][0], "custom"); // kept
         assert_eq!(out["ui"]["footer"]["showLabels"], true); // seeded
     }
@@ -350,7 +371,11 @@ mod tests {
     fn toml_seed_skips_existing_and_preserves_comments() {
         let dir = tempfile::tempdir().unwrap();
         let target = dir.path().join("config.toml");
-        fs::write(&target, "# my precious comment\n[tui]\nstatus_line = [\"mine\"]\n").unwrap();
+        fs::write(
+            &target,
+            "# my precious comment\n[tui]\nstatus_line = [\"mine\"]\n",
+        )
+        .unwrap();
         let s = TomlMergeStep {
             id: "t".into(),
             needs: vec![],

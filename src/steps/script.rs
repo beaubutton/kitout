@@ -6,13 +6,36 @@ use anyhow::{bail, Context, Result};
 use crate::manifest::OnError;
 use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
-/// Escape hatch: run any executable. Scripts own their own idempotency, so
-/// `check` always reports pending and `plan` describes the invocation.
+/// Escape hatch: run any executable. With an optional `check` command the
+/// step becomes convergence-aware: check exits 0 → satisfied (plan shows
+/// nothing, apply skips the script). Without one, scripts own their own
+/// idempotency and always run.
 pub struct ScriptStep {
     pub id: String,
     pub needs: Vec<String>,
     pub path: PathBuf,
     pub on_error: OnError,
+    /// Optional cheap convergence probe (argv). Exit 0 = satisfied.
+    pub check: Option<Vec<String>>,
+}
+
+impl ScriptStep {
+    /// Some(true)=satisfied, Some(false)=needs running, None=no check command.
+    fn check_passes(&self) -> Result<Option<bool>> {
+        let Some(cmd) = &self.check else {
+            return Ok(None);
+        };
+        if cmd.is_empty() {
+            bail!("script '{}' has an empty check command", self.id);
+        }
+        let status = Command::new(&cmd[0])
+            .args(&cmd[1..])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .with_context(|| format!("running check for '{}'", self.id))?;
+        Ok(Some(status.success()))
+    }
 }
 
 impl Step for ScriptStep {
@@ -30,10 +53,17 @@ impl Step for ScriptStep {
     }
 
     fn check(&self) -> Result<Status> {
-        Ok(Status::Pending(format!("run {}", self.path.display())))
+        Ok(match self.check_passes()? {
+            Some(true) => Status::Satisfied,
+            Some(false) => Status::Pending(format!("run {}", self.path.display())),
+            None => Status::Pending(format!("run {} (no check command)", self.path.display())),
+        })
     }
 
     fn plan(&self) -> Result<Vec<Change>> {
+        if self.check_passes()? == Some(true) {
+            return Ok(vec![]);
+        }
         Ok(vec![Change {
             summary: format!("run {}", self.path.display()),
             diff: None,
@@ -41,6 +71,9 @@ impl Step for ScriptStep {
     }
 
     fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
+        if self.check_passes()? == Some(true) {
+            return Ok(Applied::Unchanged("check passed — script skipped".into()));
+        }
         let status = Command::new(&self.path)
             .status()
             .with_context(|| format!("spawning {}", self.path.display()))?;

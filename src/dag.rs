@@ -8,11 +8,7 @@ use crate::step::Step;
 /// only on steps in waves < N. Manifest order breaks ties, so output is
 /// deterministic. Unknown `needs` ids and cycles are hard errors.
 pub fn waves(steps: &[Box<dyn Step>]) -> Result<Vec<Vec<usize>>> {
-    let index: HashMap<&str, usize> = steps
-        .iter()
-        .enumerate()
-        .map(|(i, s)| (s.id(), i))
-        .collect();
+    let index: HashMap<&str, usize> = steps.iter().enumerate().map(|(i, s)| (s.id(), i)).collect();
     if index.len() != steps.len() {
         bail!("duplicate step ids in manifest");
     }
@@ -46,7 +42,10 @@ pub fn waves(steps: &[Box<dyn Step>]) -> Result<Vec<Vec<usize>>> {
             if placed.contains(&i) {
                 continue;
             }
-            let explicit_ok = s.needs().iter().all(|n| placed.contains(&index[n.as_str()]));
+            let explicit_ok = s
+                .needs()
+                .iter()
+                .all(|n| placed.contains(&index[n.as_str()]));
             let implicit_ok = extra_needs
                 .get(&i)
                 .map(|deps| deps.iter().all(|d| placed.contains(d)))
@@ -120,7 +119,12 @@ mod tests {
 
     #[test]
     fn waves_respect_needs() {
-        let steps = vec![fake("a", &[]), fake("b", &["a"]), fake("c", &["a"]), fake("d", &["b", "c"])];
+        let steps = vec![
+            fake("a", &[]),
+            fake("b", &["a"]),
+            fake("c", &["a"]),
+            fake("d", &["b", "c"]),
+        ];
         let w = waves(&steps).unwrap();
         assert_eq!(w, vec![vec![0], vec![1, 2], vec![3]]);
     }

@@ -203,6 +203,8 @@ pub struct ScriptDef {
     pub path: String,
     #[serde(default)]
     pub on_error: OnError,
+    /// Optional convergence probe (argv; exit 0 = satisfied, script skipped).
+    pub check: Option<Vec<String>>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -245,12 +247,12 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                     needs: d.needs,
                     path: base.join(&d.path),
                     on_error: d.on_error,
+                    check: d.check,
                 }));
             }
             StepDef::Skills(d) => {
                 let id = d.id.clone().unwrap_or_else(|| "skills".into());
-                let state_file =
-                    PathBuf::from(shellexpand::tilde(&d.state_file).into_owned());
+                let state_file = PathBuf::from(shellexpand::tilde(&d.state_file).into_owned());
                 steps.push(Box::new(SkillsStep {
                     id,
                     needs: d.needs,
@@ -288,7 +290,9 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                 }));
             }
             StepDef::Secret(d) => {
-                let id = d.id.clone().unwrap_or_else(|| format!("secret:{}", d.service));
+                let id =
+                    d.id.clone()
+                        .unwrap_or_else(|| format!("secret:{}", d.service));
                 let account = d
                     .account
                     .or_else(|| std::env::var("USER").ok())
@@ -302,7 +306,9 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                 }));
             }
             StepDef::JsonMerge(d) => {
-                let id = d.id.clone().unwrap_or_else(|| format!("json-merge:{}", d.target));
+                let id =
+                    d.id.clone()
+                        .unwrap_or_else(|| format!("json-merge:{}", d.target));
                 steps.push(Box::new(JsonMergeStep {
                     id,
                     needs: d.needs,
@@ -312,7 +318,9 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                 }));
             }
             StepDef::TomlMerge(d) => {
-                let id = d.id.clone().unwrap_or_else(|| format!("toml-merge:{}", d.target));
+                let id =
+                    d.id.clone()
+                        .unwrap_or_else(|| format!("toml-merge:{}", d.target));
                 steps.push(Box::new(TomlMergeStep {
                     id,
                     needs: d.needs,
@@ -322,7 +330,9 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                 }));
             }
             StepDef::BlockInFile(d) => {
-                let id = d.id.clone().unwrap_or_else(|| format!("block:{}", d.marker));
+                let id =
+                    d.id.clone()
+                        .unwrap_or_else(|| format!("block:{}", d.marker));
                 steps.push(Box::new(BlockInFileStep {
                     id,
                     needs: d.needs,
@@ -340,7 +350,11 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                     writes: d
                         .write
                         .into_iter()
-                        .map(|w| DefaultsWrite { domain: w.domain, key: w.key, value: w.value })
+                        .map(|w| DefaultsWrite {
+                            domain: w.domain,
+                            key: w.key,
+                            value: w.value,
+                        })
                         .collect(),
                     kill: d.kill,
                 }));

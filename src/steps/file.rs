@@ -93,7 +93,10 @@ impl Step for FileStep {
             State::Same => Ok(Applied::Unchanged("already current".into())),
             State::Missing => {
                 self.install()?;
-                Ok(Applied::Changed(format!("installed {}", self.target.display())))
+                Ok(Applied::Changed(format!(
+                    "installed {}",
+                    self.target.display()
+                )))
             }
             State::Differs => {
                 // Per-step config narrows the policy first.

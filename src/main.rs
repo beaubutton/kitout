@@ -24,7 +24,11 @@ use clap::{Parser, Subcommand};
 use step::{Applied, ConflictPolicy, Status, Step};
 
 #[derive(Parser)]
-#[command(name = "kitout", version, about = "The agent-era workstation bootstrapper")]
+#[command(
+    name = "kitout",
+    version,
+    about = "The agent-era workstation bootstrapper"
+)]
 struct Cli {
     /// Path to the manifest
     #[arg(short, long, default_value = "kitout.toml", global = true)]
@@ -164,56 +168,78 @@ fn parallel_ordered<R: Send>(
 
 fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
     use console::style;
-    ui::note(&format!("planning {} step(s) across {} wave(s)…", steps.len(), waves.len()));
+    ui::note(&format!(
+        "planning {} step(s) across {} wave(s)…",
+        steps.len(),
+        waves.len()
+    ));
     let mut pending = 0usize;
     let mut failed: Option<anyhow::Error> = None;
-    parallel_ordered(steps, waves, "planning", |s| s.plan(), |wn, i, result| {
-        let wave = style(format!("wave {wn}")).dim();
-        match result {
-            Ok(changes) if changes.is_empty() => ui::sync(|| {
-                println!("{wave}  {} {}", style("✓").green().bold(), steps[i].id())
-            }),
-            Ok(changes) => ui::sync(|| {
-                for c in changes {
-                    pending += 1;
-                    println!(
-                        "{wave}  {} {} {} {}",
-                        style("→").yellow().bold(),
-                        style(steps[i].id()).bold(),
-                        style("—").dim(),
-                        c.summary
-                    );
-                    if let Some(d) = c.diff {
-                        for line in d.lines() {
-                            println!("      {}", style(line).dim());
+    parallel_ordered(
+        steps,
+        waves,
+        "planning",
+        |s| s.plan(),
+        |wn, i, result| {
+            let wave = style(format!("wave {wn}")).dim();
+            match result {
+                Ok(changes) if changes.is_empty() => {
+                    ui::sync(|| println!("{wave}  {} {}", style("✓").green().bold(), steps[i].id()))
+                }
+                Ok(changes) => ui::sync(|| {
+                    for c in changes {
+                        pending += 1;
+                        println!(
+                            "{wave}  {} {} {} {}",
+                            style("→").yellow().bold(),
+                            style(steps[i].id()).bold(),
+                            style("—").dim(),
+                            c.summary
+                        );
+                        if let Some(d) = c.diff {
+                            for line in d.lines() {
+                                println!("      {}", style(line).dim());
+                            }
                         }
                     }
+                }),
+                Err(e) => {
+                    ui::fail(steps[i].id(), &format!("{e:#}"));
+                    failed.get_or_insert(e);
                 }
-            }),
-            Err(e) => {
-                ui::fail(steps[i].id(), &format!("{e:#}"));
-                failed.get_or_insert(e);
             }
-        }
-    });
+        },
+    );
     if let Some(e) = failed {
         return Err(e.context("plan failed for one or more steps"));
     }
     if pending == 0 {
-        println!("\n{}", console::style("machine matches the manifest — nothing to do").green());
+        println!(
+            "\n{}",
+            console::style("machine matches the manifest — nothing to do").green()
+        );
     } else {
-        println!("\n{} change(s) pending — run `kitout apply`", console::style(pending).yellow().bold());
+        println!(
+            "\n{} change(s) pending — run `kitout apply`",
+            console::style(pending).yellow().bold()
+        );
     }
     Ok(())
 }
 
 fn status(steps: &[Box<dyn Step>]) -> Result<()> {
     let waves = dag::waves(steps)?;
-    parallel_ordered(steps, &waves, "checking", |s| s.check(), |_, i, result| match result {
-        Ok(Status::Satisfied) => ui::ok(steps[i].id(), "", None),
-        Ok(Status::Pending(why)) => ui::pending(steps[i].id(), &why),
-        Err(e) => ui::fail(steps[i].id(), &format!("check failed: {e:#}")),
-    });
+    parallel_ordered(
+        steps,
+        &waves,
+        "checking",
+        |s| s.check(),
+        |_, i, result| match result {
+            Ok(Status::Satisfied) => ui::ok(steps[i].id(), "", None),
+            Ok(Status::Pending(why)) => ui::pending(steps[i].id(), &why),
+            Err(e) => ui::fail(steps[i].id(), &format!("check failed: {e:#}")),
+        },
+    );
     Ok(())
 }
 
@@ -225,11 +251,18 @@ fn status(steps: &[Box<dyn Step>]) -> Result<()> {
 fn apply(steps: &[Box<dyn Step>], waves: &[Vec<usize>], policy: ConflictPolicy) -> Result<()> {
     use std::time::Instant;
     let total: usize = waves.iter().map(|w| w.len()).sum();
-    ui::note(&format!("applying {total} step(s) across {} wave(s)…", waves.len()));
+    ui::note(&format!(
+        "applying {total} step(s) across {} wave(s)…",
+        waves.len()
+    ));
 
     let mut failures: Vec<String> = Vec::new();
     // Render one step's outcome the moment it lands.
-    let mut render = |i: usize, dur: std::time::Duration, r: Result<Applied>, failures: &mut Vec<String>| -> bool {
+    let render = |i: usize,
+                  dur: std::time::Duration,
+                  r: Result<Applied>,
+                  failures: &mut Vec<String>|
+     -> bool {
         let id = steps[i].id();
         match r {
             Ok(Applied::Unchanged(s)) => ui::ok(id, &s, Some(dur)),

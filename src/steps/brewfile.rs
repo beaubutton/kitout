@@ -92,7 +92,10 @@ impl Step for BrewfileStep {
         let mut installed: Vec<&str> = Vec::new();
         let mut already = 0usize;
         for line in output.lines() {
-            if let Some(name) = line.strip_prefix("Installing ").or(line.strip_prefix("Upgrading ")) {
+            if let Some(name) = line
+                .strip_prefix("Installing ")
+                .or(line.strip_prefix("Upgrading "))
+            {
                 installed.push(name.split_whitespace().next().unwrap_or(name));
             } else if line.starts_with("Using ") {
                 already += 1;

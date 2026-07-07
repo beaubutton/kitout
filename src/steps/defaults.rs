@@ -29,7 +29,11 @@ impl DefaultsWrite {
             toml::Value::Boolean(b) => if *b { "1" } else { "0" }.to_string(),
             toml::Value::Integer(i) => i.to_string(),
             toml::Value::String(s) => s.clone(),
-            other => bail!("defaults value for {}:{} must be bool, int, or string (got {other})", self.domain, self.key),
+            other => bail!(
+                "defaults value for {}:{} must be bool, int, or string (got {other})",
+                self.domain,
+                self.key
+            ),
         })
     }
 
@@ -37,7 +41,10 @@ impl DefaultsWrite {
         match &self.value {
             toml::Value::Boolean(b) => ("-bool", b.to_string()),
             toml::Value::Integer(i) => ("-int", i.to_string()),
-            _ => ("-string", self.value.as_str().unwrap_or_default().to_string()),
+            _ => (
+                "-string",
+                self.value.as_str().unwrap_or_default().to_string(),
+            ),
         }
     }
 
@@ -67,7 +74,11 @@ impl Step for DefaultsStep {
     }
 
     fn check(&self) -> Result<Status> {
-        let missing = self.writes.iter().filter(|w| !w.matches().unwrap_or(false)).count();
+        let missing = self
+            .writes
+            .iter()
+            .filter(|w| !w.matches().unwrap_or(false))
+            .count();
         Ok(if missing == 0 {
             Status::Satisfied
         } else {
@@ -130,6 +141,8 @@ impl Step for DefaultsStep {
         } else {
             format!("; restarted {}", self.kill.join(", "))
         };
-        Ok(Applied::Changed(format!("wrote {written} preference(s){restarted}")))
+        Ok(Applied::Changed(format!(
+            "wrote {written} preference(s){restarted}"
+        )))
     }
 }
