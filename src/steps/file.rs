@@ -110,7 +110,8 @@ impl Step for FileStep {
                         "kept local {} — differs from manifest (run interactively or --force-replace)",
                         self.target.display()
                     ))),
-                    ConflictPolicy::Interactive => {
+                    // ui::sync suspends any active spinner for the diff+prompt.
+                    ConflictPolicy::Interactive => crate::ui::sync(|| {
                         println!("{}", self.diff()?);
                         let overwrite = dialoguer::Confirm::new()
                             .with_prompt(format!("Overwrite {}?", self.target.display()))
@@ -122,7 +123,7 @@ impl Step for FileStep {
                         } else {
                             Ok(Applied::Kept(format!("kept local {}", self.target.display())))
                         }
-                    }
+                    }),
                 }
             }
         }

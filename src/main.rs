@@ -217,59 +217,76 @@ fn apply(steps: &[Box<dyn Step>], waves: &[Vec<usize>], policy: ConflictPolicy) 
     ui::note(&format!("applying {total} step(s) across {} wave(s)…", waves.len()));
 
     let mut failures: Vec<String> = Vec::new();
-    'waves: for wave in waves {
-        type StepResult = (usize, std::time::Duration, Result<Applied>);
-        let run = |i: usize| -> StepResult {
-            if steps[i].streams_output() {
-                ui::stream_banner(steps[i].id());
+    // Render one step's outcome the moment it lands.
+    let mut render = |i: usize, dur: std::time::Duration, r: Result<Applied>, failures: &mut Vec<String>| -> bool {
+        let id = steps[i].id();
+        match r {
+            Ok(Applied::Unchanged(s)) => ui::ok(id, &s, Some(dur)),
+            Ok(Applied::Changed(s)) => ui::changed(id, &s, Some(dur)),
+            Ok(Applied::Kept(s)) => ui::warn(&format!("{id} — {s}")),
+            Err(e) if steps[i].warn_on_error() => {
+                ui::warn(&format!("{id} failed (on-error = warn): {e:#}"));
             }
-            let t = Instant::now();
-            let r = steps[i].apply(policy);
-            (i, t.elapsed(), r)
-        };
-        let results: Vec<StepResult> = if policy == ConflictPolicy::Interactive {
-            wave.iter().map(|&i| run(i)).collect()
+            Err(e) => {
+                ui::fail(id, &format!("{e:#}"));
+                failures.push(id.to_string());
+                return true;
+            }
+        }
+        false
+    };
+
+    'waves: for wave in waves {
+        let mut wave_failed = false;
+        if policy == ConflictPolicy::Interactive {
+            // Sequential (prompts must never interleave), but live: a spinner
+            // for the running step — prompts suspend it via ui::sync — and
+            // each result renders immediately.
+            for &i in wave {
+                let streams = steps[i].streams_output();
+                let mp = indicatif::MultiProgress::new();
+                let pb = if streams {
+                    ui::stream_banner(steps[i].id());
+                    None
+                } else {
+                    ui::set_progress(mp.clone());
+                    Some(ui::spinner(&mp, "applying", steps[i].id()))
+                };
+                let t = Instant::now();
+                let r = steps[i].apply(policy);
+                if let Some(pb) = pb {
+                    pb.finish_and_clear();
+                    ui::clear_progress();
+                }
+                wave_failed |= render(i, t.elapsed(), r, &mut failures);
+            }
         } else {
+            // Parallel: spinner per in-flight step, results rendered as they
+            // arrive (not batched until the wave ends).
             let mp = indicatif::MultiProgress::new();
             ui::set_progress(mp.clone());
-            let results = std::thread::scope(|scope| {
-                let handles: Vec<_> = wave
-                    .iter()
-                    .map(|&i| {
-                        let run = &run;
-                        let pb = ui::spinner(&mp, "applying", steps[i].id());
-                        scope.spawn(move || {
-                            let r = run(i);
-                            pb.finish_and_clear();
-                            r
-                        })
-                    })
-                    .collect();
-                handles
-                    .into_iter()
-                    .map(|h| h.join().expect("step thread panicked"))
-                    .collect()
+            std::thread::scope(|scope| {
+                let (tx, rx) = std::sync::mpsc::channel();
+                for &i in wave {
+                    let tx = tx.clone();
+                    let pb = ui::spinner(&mp, "applying", steps[i].id());
+                    let step = &steps[i];
+                    if step.streams_output() {
+                        ui::stream_banner(step.id());
+                    }
+                    scope.spawn(move || {
+                        let t = Instant::now();
+                        let r = step.apply(policy);
+                        pb.finish_and_clear();
+                        let _ = tx.send((i, t.elapsed(), r));
+                    });
+                }
+                drop(tx);
+                for (i, dur, r) in rx {
+                    wave_failed |= render(i, dur, r, &mut failures);
+                }
             });
             ui::clear_progress();
-            results
-        };
-
-        let mut wave_failed = false;
-        for (i, dur, r) in results {
-            let id = steps[i].id();
-            match r {
-                Ok(Applied::Unchanged(s)) => ui::ok(id, &s, Some(dur)),
-                Ok(Applied::Changed(s)) => ui::changed(id, &s, Some(dur)),
-                Ok(Applied::Kept(s)) => ui::warn(&format!("{id} — {s}")),
-                Err(e) if steps[i].warn_on_error() => {
-                    ui::warn(&format!("{id} failed (on-error = warn): {e:#}"));
-                }
-                Err(e) => {
-                    ui::fail(id, &format!("{e:#}"));
-                    failures.push(id.to_string());
-                    wave_failed = true;
-                }
-            }
         }
         if wave_failed {
             ui::note("stopping: not scheduling later waves (drain-and-report)");
