@@ -381,9 +381,22 @@ impl Step for SkillsStep {
     }
 
     fn check(&self) -> Result<Status> {
-        // Cheap check without network: pending if any claimed dest is missing.
-        // Full drift detection requires fetching — that's `plan`'s job.
-        Ok(Status::Pending("sync agent skills from manifest".into()))
+        // Cheap, no-network check: every manifest entry has a copy at every
+        // target. Content freshness needs fetching — that's `plan`'s job.
+        let home = self.home()?;
+        let raw = fs::read_to_string(&self.manifest)
+            .with_context(|| format!("reading {}", self.manifest.display()))?;
+        let entries = parse_manifest(&raw)?;
+        let missing = entries
+            .iter()
+            .flat_map(|e| e.targets.iter().map(|t| t.base(&home).join(&e.name)))
+            .filter(|d| !d.join("SKILL.md").is_file())
+            .count();
+        Ok(if missing == 0 {
+            Status::Satisfied
+        } else {
+            Status::Pending(format!("{missing} skill cop(y/ies) missing"))
+        })
     }
 
     fn plan(&self) -> Result<Vec<Change>> {
