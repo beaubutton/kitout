@@ -25,5 +25,6 @@ kitout is young — issues and PRs are welcome.
 ```bash
 cargo test
 cargo fmt && cargo clippy
-cargo run -- -m examples/demo/kitout.toml plan   # toy manifest end-to-end
+make check    # the strict gate (fmt, clippy, tests) — same as CI
+make demo     # toy manifest end-to-end
 ```
