@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use similar::TextDiff;
 
 use crate::manifest::OnConflict;
-use crate::step::{Change, ConflictPolicy, Status, Step};
+use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
 /// Install a file from the manifest repo to a target path, with the locked
 /// conflict semantics: local edits are never destroyed silently.
@@ -84,13 +84,12 @@ impl Step for FileStep {
         })
     }
 
-    fn apply(&self, policy: ConflictPolicy) -> Result<()> {
+    fn apply(&self, policy: ConflictPolicy) -> Result<Applied> {
         match self.state()? {
-            State::Same => Ok(()),
+            State::Same => Ok(Applied::Unchanged("already current".into())),
             State::Missing => {
                 self.install()?;
-                println!("  + installed {}", self.target.display());
-                Ok(())
+                Ok(Applied::Changed(format!("installed {}", self.target.display())))
             }
             State::Differs => {
                 // Per-step config narrows the policy first.
@@ -102,16 +101,15 @@ impl Step for FileStep {
                 match effective {
                     ConflictPolicy::ForceReplace => {
                         self.install()?;
-                        println!("  ! replaced {} (local edits overwritten)", self.target.display());
-                        Ok(())
-                    }
-                    ConflictPolicy::KeepLocal => {
-                        eprintln!(
-                            "  ⚠ kept local {} — differs from manifest (re-run interactively or use --force-replace)",
+                        Ok(Applied::Changed(format!(
+                            "replaced {} (local edits overwritten)",
                             self.target.display()
-                        );
-                        Ok(())
+                        )))
                     }
+                    ConflictPolicy::KeepLocal => Ok(Applied::Kept(format!(
+                        "kept local {} — differs from manifest (run interactively or --force-replace)",
+                        self.target.display()
+                    ))),
                     ConflictPolicy::Interactive => {
                         println!("{}", self.diff()?);
                         let overwrite = dialoguer::Confirm::new()
@@ -120,11 +118,10 @@ impl Step for FileStep {
                             .interact()?;
                         if overwrite {
                             self.install()?;
-                            println!("  + overwrote {}", self.target.display());
+                            Ok(Applied::Changed(format!("overwrote {}", self.target.display())))
                         } else {
-                            eprintln!("  ⚠ kept local {}", self.target.display());
+                            Ok(Applied::Kept(format!("kept local {}", self.target.display())))
                         }
-                        Ok(())
                     }
                 }
             }

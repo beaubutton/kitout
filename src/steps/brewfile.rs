@@ -7,7 +7,7 @@ use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 
-use crate::step::{Change, ConflictPolicy, Status, Step};
+use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
 pub struct BrewfileStep {
     pub id: String,
@@ -77,19 +77,36 @@ impl Step for BrewfileStep {
         })
     }
 
-    fn apply(&self, _policy: ConflictPolicy) -> Result<()> {
+    fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
         if self.bundle_check()? {
-            return Ok(());
+            return Ok(Applied::Unchanged("all packages already current".into()));
         }
         self.trust_taps()?;
-        let status = Command::new("brew")
-            .args(["bundle", "--upgrade"])
-            .arg(format!("--file={}", self.path.display()))
-            .status()
-            .context("running `brew bundle`")?;
-        if !status.success() {
-            bail!("brew bundle exited with {status}");
+        // Capture brew's output: its per-package "Using foo" chatter is noise
+        // at success and gold at failure.
+        let (ok, output) = crate::ui::run_captured(
+            Command::new("brew")
+                .args(["bundle", "--upgrade"])
+                .arg(format!("--file={}", self.path.display())),
+        )?;
+        let mut installed: Vec<&str> = Vec::new();
+        let mut already = 0usize;
+        for line in output.lines() {
+            if let Some(name) = line.strip_prefix("Installing ").or(line.strip_prefix("Upgrading ")) {
+                installed.push(name.split_whitespace().next().unwrap_or(name));
+            } else if line.starts_with("Using ") {
+                already += 1;
+            }
         }
-        Ok(())
+        if !ok {
+            crate::ui::dump_tail(&output, 20);
+            bail!("brew bundle failed (full output above)");
+        }
+        Ok(Applied::Changed(format!(
+            "installed/upgraded {} ({}); {} already current",
+            installed.len(),
+            installed.join(", "),
+            already
+        )))
     }
 }

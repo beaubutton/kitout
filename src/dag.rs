@@ -55,7 +55,7 @@ pub fn waves(steps: &[Box<dyn Step>]) -> Result<Vec<Vec<usize>>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::step::{Change, ConflictPolicy, Status, Step};
+    use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
     use anyhow::Result;
 
     struct Fake {
@@ -75,8 +75,8 @@ mod tests {
         fn plan(&self) -> Result<Vec<Change>> {
             Ok(vec![])
         }
-        fn apply(&self, _: ConflictPolicy) -> Result<()> {
-            Ok(())
+        fn apply(&self, _: ConflictPolicy) -> Result<Applied> {
+            Ok(Applied::Unchanged(String::new()))
         }
     }
 

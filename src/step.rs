@@ -35,14 +35,31 @@ pub enum ConflictPolicy {
 /// Contract: `check` and `plan` are read-only; `apply` is idempotent and
 /// respects the conflict policy. Implementations must be `Send + Sync` so the
 /// DAG executor can run independent steps in parallel.
+/// What `apply` did, with a one-line human summary. Steps do not print their
+/// own result lines — the executor renders these uniformly (ui.rs).
+#[derive(Debug, Clone)]
+pub enum Applied {
+    /// Nothing needed doing.
+    Unchanged(String),
+    /// Work was done.
+    Changed(String),
+    /// Deliberately did NOT converge (kept local edits) — warn-worthy.
+    Kept(String),
+}
+
 pub trait Step: Send + Sync {
     fn id(&self) -> &str;
     fn needs(&self) -> &[String];
     fn check(&self) -> Result<Status>;
     fn plan(&self) -> Result<Vec<Change>>;
-    fn apply(&self, policy: ConflictPolicy) -> Result<()>;
+    fn apply(&self, policy: ConflictPolicy) -> Result<Applied>;
     /// Soft-fail steps warn instead of failing the run (drain-and-report).
     fn warn_on_error(&self) -> bool {
+        false
+    }
+    /// Steps that stream child output / prompt interactively announce
+    /// themselves with a banner so their output is attributed.
+    fn streams_output(&self) -> bool {
         false
     }
 }

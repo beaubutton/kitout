@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 
-use crate::step::{Change, ConflictPolicy, Status, Step};
+use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
 pub struct SkillsStep {
     pub id: String,
@@ -376,12 +376,12 @@ impl Step for SkillsStep {
         Ok(changes)
     }
 
-    fn apply(&self, _policy: ConflictPolicy) -> Result<()> {
+    fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
         let plan = self.compute()?;
         for w in &plan.warnings {
-            eprintln!("  ⚠ {w}");
+            crate::ui::warn(w);
         }
-        // Group output per skill like the bash version.
+        // Quiet when converged: only updated/removed skills get detail lines.
         let mut updated: BTreeMap<String, Vec<&str>> = BTreeMap::new();
         let mut current: BTreeMap<String, Vec<&str>> = BTreeMap::new();
         for (name, label, dest, staged) in &plan.actions {
@@ -396,14 +396,11 @@ impl Step for SkillsStep {
             }
         }
         for (name, labels) in &updated {
-            println!("  + skill {name} — installed/updated: {}", labels.join(" "));
-        }
-        for (name, labels) in &current {
-            println!("  = skill {name} — up to date: {}", labels.join(" "));
+            crate::ui::detail(&format!("+ skill {name} → {}", labels.join(", ")));
         }
         for r in &plan.removals {
             fs::remove_dir_all(r).with_context(|| format!("removing {}", r.display()))?;
-            println!("  - removed retired skill copy {}", r.display());
+            crate::ui::detail(&format!("- removed retired copy {}", r.display()));
         }
         if let Some(parent) = self.state_file.parent() {
             fs::create_dir_all(parent)?;
@@ -414,7 +411,13 @@ impl Step for SkillsStep {
             &self.state_file,
             state.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n") + "\n",
         )?;
-        Ok(())
+        let removed = plan.removals.len();
+        let summary = match (updated.len(), removed) {
+            (0, 0) => return Ok(Applied::Unchanged(format!("all {} skills up to date", current.len()))),
+            (u, 0) => format!("{u} skill(s) installed/updated, {} up to date", current.len()),
+            (u, r) => format!("{u} skill(s) installed/updated, {r} removed, {} up to date", current.len()),
+        };
+        Ok(Applied::Changed(summary))
     }
 }
 

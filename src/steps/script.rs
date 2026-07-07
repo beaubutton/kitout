@@ -4,7 +4,7 @@ use std::process::Command;
 use anyhow::{bail, Context, Result};
 
 use crate::manifest::OnError;
-use crate::step::{Change, ConflictPolicy, Status, Step};
+use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
 /// Escape hatch: run any executable. Scripts own their own idempotency, so
 /// `check` always reports pending and `plan` describes the invocation.
@@ -25,6 +25,9 @@ impl Step for ScriptStep {
     fn warn_on_error(&self) -> bool {
         self.on_error == OnError::Warn
     }
+    fn streams_output(&self) -> bool {
+        true
+    }
 
     fn check(&self) -> Result<Status> {
         Ok(Status::Pending(format!("run {}", self.path.display())))
@@ -37,13 +40,13 @@ impl Step for ScriptStep {
         }])
     }
 
-    fn apply(&self, _policy: ConflictPolicy) -> Result<()> {
+    fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
         let status = Command::new(&self.path)
             .status()
             .with_context(|| format!("spawning {}", self.path.display()))?;
         if !status.success() {
             bail!("{} exited with {}", self.path.display(), status);
         }
-        Ok(())
+        Ok(Applied::Changed("completed".into()))
     }
 }

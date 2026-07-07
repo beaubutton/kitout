@@ -7,7 +7,7 @@ use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 
-use crate::step::{Change, ConflictPolicy, Status, Step};
+use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
 pub struct McpServerStep {
     pub id: String,
@@ -62,9 +62,9 @@ impl Step for McpServerStep {
         })
     }
 
-    fn apply(&self, _policy: ConflictPolicy) -> Result<()> {
+    fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
         if self.registered()? {
-            return Ok(());
+            return Ok(Applied::Unchanged("already registered with Claude Code".into()));
         }
         let mut cmd = Command::new("claude");
         cmd.args(["mcp", "add", "--scope", "user"]);
@@ -83,11 +83,11 @@ impl Step for McpServerStep {
             }
             cmd.arg(&self.name).arg("--").args(&self.command);
         }
-        let status = cmd.status().context("running `claude mcp add`")?;
-        if !status.success() {
-            bail!("claude mcp add {} exited with {status}", self.name);
+        let (ok, output) = crate::ui::run_captured(&mut cmd).context("running `claude mcp add`")?;
+        if !ok {
+            crate::ui::dump_tail(&output, 10);
+            bail!("claude mcp add {} failed (output above)", self.name);
         }
-        println!("  + registered MCP server '{}' with Claude Code", self.name);
-        Ok(())
+        Ok(Applied::Changed("registered with Claude Code (user scope)".into()))
     }
 }

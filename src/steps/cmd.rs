@@ -5,7 +5,7 @@ use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 
-use crate::step::{Change, ConflictPolicy, Status, Step};
+use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
 pub struct CommandIfMissingStep {
     pub id: String,
@@ -51,21 +51,21 @@ impl Step for CommandIfMissingStep {
         })
     }
 
-    fn apply(&self, _policy: ConflictPolicy) -> Result<()> {
+    fn apply(&self, _policy: ConflictPolicy) -> Result<Applied> {
         if on_path(&self.probe) {
-            return Ok(());
+            return Ok(Applied::Unchanged(format!("`{}` already present", self.probe)));
         }
         if self.install.is_empty() {
             bail!("command-if-missing '{}' has an empty install command", self.id);
         }
-        let status = Command::new(&self.install[0])
-            .args(&self.install[1..])
-            .status()
-            .with_context(|| format!("spawning {}", self.install[0]))?;
-        if !status.success() {
-            bail!("installer for `{}` exited with {status}", self.probe);
+        let (ok, output) = crate::ui::run_captured(
+            Command::new(&self.install[0]).args(&self.install[1..]),
+        )
+        .with_context(|| format!("spawning {}", self.install[0]))?;
+        if !ok {
+            crate::ui::dump_tail(&output, 15);
+            bail!("installer for `{}` failed (output above)", self.probe);
         }
-        println!("  + installed `{}`", self.probe);
-        Ok(())
+        Ok(Applied::Changed(format!("installed `{}`", self.probe)))
     }
 }
