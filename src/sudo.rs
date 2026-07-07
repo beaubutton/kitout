@@ -1,4 +1,4 @@
-//! One sudo prompt for the whole run, ported from osx-baseline's Setup.sh:
+//! One sudo prompt for the whole run:
 //! a cached timestamp alone is not enough because every `brew` invocation
 //! runs `sudo --reset-timestamp`. Instead the password is stashed in the
 //! macOS login Keychain and exposed to every child process via SUDO_ASKPASS

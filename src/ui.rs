@@ -9,8 +9,7 @@ use std::time::Duration;
 use console::style;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
-/// The spinner frames from osx-baseline's original bash `spin()` helper,
-/// living on in Rust.
+/// Braille spinner frames for the activity indicator.
 const FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 static MP: Mutex<Option<MultiProgress>> = Mutex::new(None);

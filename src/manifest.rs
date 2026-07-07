@@ -122,8 +122,8 @@ pub struct SkillsDef {
     pub needs: Vec<String>,
     /// Pipe-format skills manifest, relative to this manifest's directory.
     pub manifest: String,
-    /// State file for GC; `~` expanded. Set this to osx-baseline's
-    /// `~/.config/osx-baseline/managed-skills` to interoperate with Setup.sh.
+    /// State file recording which skills kitout installed (drives GC of
+    /// removed manifest entries); `~` expanded.
     #[serde(default = "default_skills_state")]
     pub state_file: String,
 }

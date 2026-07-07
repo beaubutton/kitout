@@ -1,9 +1,8 @@
 //! `json-merge` / `toml-merge`: converge structured config keys without
-//! clobbering the rest of the file. Two modes, matching the two philosophies
-//! Setup.sh used:
-//!   converge (default) — manifest values are enforced (Claude statusLine)
-//!   seed — only write keys that are absent; user tweaks survive (codex,
-//!          gemini footer)
+//! clobbering the rest of the file. Two modes for the two common needs:
+//!   converge (default) — manifest values are enforced (e.g. a status line)
+//!   seed — only write keys that are absent; user tweaks survive (e.g. an
+//!          editor/agent config the user also hand-edits)
 //! toml-merge uses toml_edit, so comments and formatting in the target file
 //! are preserved.
 

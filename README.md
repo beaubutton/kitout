@@ -35,8 +35,7 @@ path = "steps/trust-dev-certs.sh"
 on-error = "warn"
 
 [[step]]
-type = "mcp-server"          # coming: the reason this tool exists
-agent = "claude"
+type = "mcp-server"          # the reason this tool exists
 name = "kubernetes"
 command = ["mcp-server-kubernetes"]
 env = { ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS = "true" }
@@ -49,6 +48,8 @@ kitout apply     # converge, interactively (diffs + prompts, serialized)
 kitout apply -y  # unattended: local edits are KEPT and warned about
 kitout apply --force-replace   # unattended: manifest wins (servers/CI)
 ```
+
+**[Manifest reference →](docs/manifest.md)** — every step type and its fields.
 
 ## Design principles (locked by design review)
 

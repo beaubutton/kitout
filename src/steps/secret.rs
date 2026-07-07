@@ -1,5 +1,5 @@
 //! `secret`: prompt-once, stash in the macOS login Keychain, reuse forever.
-//! Ported from osx-baseline's RunComfy token flow. Never prints values;
+//! Typical use is an API token consumed by a later step. Never prints values;
 //! unattended runs never prompt (they report Kept instead).
 
 use std::process::Command;

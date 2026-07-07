@@ -1,12 +1,11 @@
-//! FLAGSHIP: agent-skills sync — the Rust port of osx-baseline's step 3d.
+//! FLAGSHIP: agent-skills sync across coding agents.
 //!
 //! Reads the pipe-format manifest (`name | source | targets`), fetches each
 //! skill (raw SKILL.md URL, or GitHub `owner/repo[@ref][:path]` tarball with
 //! one download per repo@ref), installs to each target's skills dir only when
 //! content differs, and garbage-collects copies whose manifest entry or
-//! target disappeared. Interoperates with the bash implementation: same
-//! state file (`~/.config/osx-baseline/managed-skills`), same guard rails
-//! (only paths under managed bases, no `..`), same offline behavior (fetch
+//! target disappeared. A state file records what kitout installed, with guard
+//! rails (only paths under managed bases, no `..`) and offline safety (a fetch
 //! failure never removes or overwrites good copies).
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};

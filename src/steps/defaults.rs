@@ -1,6 +1,5 @@
 //! `defaults`: macOS preference writes with per-key change detection, and
-//! `killall` only when something actually changed — the Setup.sh step-12
-//! pattern as a first-class type.
+//! `killall` only when something actually changed.
 
 use std::process::Command;
 

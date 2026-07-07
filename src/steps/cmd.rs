@@ -1,5 +1,5 @@
 //! `command-if-missing`: probe for a binary; run an installer when absent.
-//! Covers the npm-global / dotnet-tool pattern from Setup.sh.
+//! Covers the npm-global / dotnet-tool install pattern.
 
 use std::process::Command;
 
