@@ -1,3 +1,8 @@
+## [0.2.1] - 2026-07-08
+
+### 🐛 Bug Fixes
+
+- *(skills)* Extract only the needed subpath; detect oversized tarballs
 ## [0.2.0] - 2026-07-08
 
 ### 🚀 Features
@@ -19,6 +24,10 @@
 - Add manifest/step-type reference; genericize source comments
 - Add dotfiles and agent-workstation examples
 - Document agent-operable commands and persona templates
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V0.2.0
 ## [0.1.3] - 2026-07-07
 
 ### 🐛 Bug Fixes
