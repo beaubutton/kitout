@@ -16,7 +16,7 @@ mod steps {
     pub mod skills;
 }
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
@@ -33,6 +33,9 @@ struct Cli {
     /// Path to the manifest
     #[arg(short, long, default_value = "kitout.toml", global = true)]
     manifest: PathBuf,
+    /// Machine-readable JSON output (plan, status, validate)
+    #[arg(long, global = true)]
+    json: bool,
     #[command(subcommand)]
     command: Cmd,
 }
@@ -52,25 +55,36 @@ enum Cmd {
     },
     /// Per-step convergence status (read-only)
     Status,
+    /// Parse and check the manifest without touching the machine
+    Validate,
     /// Run a single step (and, transitively, its needs)
     Step { id: String },
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let json = cli.json;
     let manifest_path = cli.manifest.canonicalize().unwrap_or(cli.manifest.clone());
     let base = manifest_path
         .parent()
         .context("manifest has no parent directory")?
         .to_path_buf();
+
+    // Validate catches load/build errors itself (to report them structured),
+    // so it must run before the eager load below.
+    if let Cmd::Validate = cli.command {
+        return validate(&manifest_path, &base, json);
+    }
+
     let parsed = manifest::load(&manifest_path)?;
     let wants_sudo = parsed.sudo;
     let steps = manifest::build_steps(parsed, &base)?;
     let waves = dag::waves(&steps)?;
 
     match cli.command {
-        Cmd::Plan => plan(&steps, &waves),
-        Cmd::Status => status(&steps),
+        Cmd::Plan => plan(&steps, &waves, json),
+        Cmd::Status => status(&steps, json),
+        Cmd::Validate => unreachable!("handled before manifest load"),
         Cmd::Apply { yes, force_replace } => {
             let policy = match (yes, force_replace) {
                 (_, true) => ConflictPolicy::ForceReplace,
@@ -166,7 +180,10 @@ fn parallel_ordered<R: Send>(
     ui::clear_progress();
 }
 
-fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
+fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>], json: bool) -> Result<()> {
+    if json {
+        return plan_json(steps);
+    }
     use console::style;
     ui::note(&format!(
         "planning {} step(s) across {} wave(s)…",
@@ -227,7 +244,10 @@ fn plan(steps: &[Box<dyn Step>], waves: &[Vec<usize>]) -> Result<()> {
     Ok(())
 }
 
-fn status(steps: &[Box<dyn Step>]) -> Result<()> {
+fn status(steps: &[Box<dyn Step>], json: bool) -> Result<()> {
+    if json {
+        return status_json(steps);
+    }
     let waves = dag::waves(steps)?;
     parallel_ordered(
         steps,
@@ -239,6 +259,115 @@ fn status(steps: &[Box<dyn Step>]) -> Result<()> {
             Ok(Status::Pending(why)) => ui::pending(steps[i].id(), &why),
             Err(e) => ui::fail(steps[i].id(), &format!("check failed: {e:#}")),
         },
+    );
+    Ok(())
+}
+
+/// Parse the manifest, build its steps, and topo-sort them — reporting the
+/// first error without touching the machine. The agent-facing "does this
+/// manifest even load?" check; `--json` makes the verdict machine-readable.
+fn validate(path: &Path, base: &Path, json: bool) -> Result<()> {
+    let result = (|| -> Result<(usize, usize)> {
+        let parsed = manifest::load(path)?;
+        let steps = manifest::build_steps(parsed, base)?;
+        let waves = dag::waves(&steps)?;
+        Ok((steps.len(), waves.len()))
+    })();
+    if json {
+        let obj = match &result {
+            Ok((steps, waves)) => serde_json::json!({
+                "valid": true, "steps": steps, "waves": waves
+            }),
+            Err(e) => serde_json::json!({ "valid": false, "error": format!("{e:#}") }),
+        };
+        println!("{}", serde_json::to_string_pretty(&obj)?);
+        std::process::exit(if result.is_ok() { 0 } else { 1 });
+    }
+    let (steps, waves) = result.context("manifest is invalid")?;
+    println!("valid — {steps} step(s), {waves} wave(s)");
+    Ok(())
+}
+
+// ---- machine-readable output (`--json`) ------------------------------------
+
+#[derive(serde::Serialize)]
+struct ChangeJson {
+    summary: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    diff: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+struct PlanStepJson {
+    id: String,
+    changes: Vec<ChangeJson>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+struct PlanJson {
+    pending: usize,
+    steps: Vec<PlanStepJson>,
+}
+
+fn plan_json(steps: &[Box<dyn Step>]) -> Result<()> {
+    let mut out = PlanJson {
+        pending: 0,
+        steps: Vec::new(),
+    };
+    for s in steps {
+        match s.plan() {
+            Ok(changes) => {
+                out.pending += changes.len();
+                out.steps.push(PlanStepJson {
+                    id: s.id().to_string(),
+                    changes: changes
+                        .into_iter()
+                        .map(|c| ChangeJson {
+                            summary: c.summary,
+                            diff: c.diff,
+                        })
+                        .collect(),
+                    error: None,
+                });
+            }
+            Err(e) => out.steps.push(PlanStepJson {
+                id: s.id().to_string(),
+                changes: Vec::new(),
+                error: Some(format!("{e:#}")),
+            }),
+        }
+    }
+    println!("{}", serde_json::to_string_pretty(&out)?);
+    Ok(())
+}
+
+#[derive(serde::Serialize)]
+struct StatusStepJson {
+    id: String,
+    status: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
+}
+
+fn status_json(steps: &[Box<dyn Step>]) -> Result<()> {
+    let mut out: Vec<StatusStepJson> = Vec::new();
+    for s in steps {
+        let (status, detail) = match s.check() {
+            Ok(Status::Satisfied) => ("satisfied", None),
+            Ok(Status::Pending(why)) => ("pending", Some(why)),
+            Err(e) => ("error", Some(format!("{e:#}"))),
+        };
+        out.push(StatusStepJson {
+            id: s.id().to_string(),
+            status,
+            detail,
+        });
+    }
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&serde_json::json!({ "steps": out }))?
     );
     Ok(())
 }
