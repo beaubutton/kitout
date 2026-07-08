@@ -1,3 +1,4 @@
+mod create;
 mod dag;
 mod manifest;
 mod step;
@@ -59,6 +60,17 @@ enum Cmd {
     Validate,
     /// Print the manifest JSON Schema (for editors and agents)
     Schema,
+    /// Scaffold a new machine config from a persona template
+    CreateConfig {
+        /// Directory to create
+        dir: PathBuf,
+        /// Persona template (see `--type` help / templates/)
+        #[arg(long = "type")]
+        persona: String,
+        /// Also create + push a private GitHub repo (falls back to local-only)
+        #[arg(long)]
+        github: bool,
+    },
     /// Run a single step (and, transitively, its needs)
     Step { id: String },
 }
@@ -84,6 +96,15 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    if let Cmd::CreateConfig {
+        dir,
+        persona,
+        github,
+    } = &cli.command
+    {
+        return create::run(dir, persona, *github);
+    }
+
     let parsed = manifest::load(&manifest_path)?;
     let wants_sudo = parsed.sudo;
     let steps = manifest::build_steps(parsed, &base)?;
@@ -94,6 +115,7 @@ fn main() -> Result<()> {
         Cmd::Status => status(&steps, json),
         Cmd::Validate => unreachable!("handled before manifest load"),
         Cmd::Schema => unreachable!("handled before manifest load"),
+        Cmd::CreateConfig { .. } => unreachable!("handled before manifest load"),
         Cmd::Apply { yes, force_replace } => {
             let policy = match (yes, force_replace) {
                 (_, true) => ConflictPolicy::ForceReplace,
