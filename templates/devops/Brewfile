@@ -28,7 +28,7 @@ brew "actionlint"
 # ── Terraform / IaC ──
 brew "opentofu"                 # (terraform itself: hashicorp/tap/terraform — BSL)
 brew "tenv"                     # tf/tofu/terragrunt version manager
-brew "tflint"
+brew "terraform-linters/tap/tflint"
 brew "checkov"
 # ── containers ──
 brew "docker"

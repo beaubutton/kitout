@@ -19,7 +19,7 @@ cask "claude-code"
 # ── Godot / C# ──
 cask "godot-mono"               # C#-capable Godot
 brew "dotnet"
-cask "jetbrains-rider"          # best Godot/Unity C# IDE
+cask "rider"          # best Godot/Unity C# IDE
 # ── Unity / C# ──
 cask "unity-hub"
 # ── Unreal / C++ ──

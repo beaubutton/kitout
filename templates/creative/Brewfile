@@ -19,7 +19,7 @@ cask "claude-code"
 # ── generative image ──
 brew "python@3.13"
 brew "imagemagick"
-brew "libvips"
+brew "vips"
 brew "ffmpeg"
 brew "aria2"                    # fast model downloads
 # cask "comfyui"               # local node-graph diffusion (optional)
