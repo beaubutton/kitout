@@ -135,14 +135,22 @@ fn write_tree(dir: &Path, tree: &SkillTree) -> Result<()> {
 }
 
 fn fetch_url(url: &str) -> Result<Vec<u8>> {
+    const CAP: u64 = 200 * 1024 * 1024;
     let resp = ureq::get(url)
         .timeout(std::time::Duration::from_secs(180))
         .call()
         .with_context(|| format!("GET {url}"))?;
     let mut buf = Vec::new();
-    resp.into_reader()
-        .take(200 * 1024 * 1024)
-        .read_to_end(&mut buf)?;
+    // Read one past the cap so an oversized body is detected rather than
+    // silently truncated (a truncated tarball fails later with a confusing
+    // "can't unpack <asset>" — this reports the real cause instead).
+    resp.into_reader().take(CAP + 1).read_to_end(&mut buf)?;
+    if buf.len() as u64 > CAP {
+        bail!(
+            "{url}: response exceeds the {}MB fetch limit — repo too large to install as a tarball",
+            CAP / 1024 / 1024
+        );
+    }
     Ok(buf)
 }
 
@@ -176,19 +184,71 @@ struct Fetched {
     repos: HashMap<String, Result<PathBuf, String>>,
 }
 
+/// Unpack a GitHub repo tarball into `out`, keeping only entries under one of
+/// `wanted` (repo-relative subpaths; empty = keep everything). Filtering to the
+/// skill subdirs we actually need sidesteps awkward files elsewhere in the repo
+/// (huge assets, odd symlinks) that would otherwise abort the whole extraction
+/// — the game-creator failure, where one `.spz` asset killed the fetch. Any
+/// remaining per-entry failure is tolerated; only a corrupt archive errors.
+/// Returns the top-level `<repo>-<ref>` directory it contains.
+fn extract_repo_tarball(bytes: &[u8], out: &Path, wanted: &[String]) -> Result<PathBuf, String> {
+    fs::create_dir_all(out).map_err(|e| e.to_string())?;
+    let mut archive = tar::Archive::new(flate2::read::GzDecoder::new(bytes));
+    let entries = archive
+        .entries()
+        .map_err(|e| format!("reading tarball: {e}"))?;
+    for entry in entries {
+        let Ok(mut e) = entry else { continue };
+        if !wanted.is_empty() {
+            // Entry path is `<repo>-<ref>/<rel>`; keep only entries whose `rel`
+            // is a wanted subpath or sits under one.
+            let Ok(path) = e.path().map(|p| p.into_owned()) else {
+                continue;
+            };
+            let rel: PathBuf = path.components().skip(1).collect();
+            let rel = rel.to_string_lossy();
+            let keep = rel.is_empty()
+                || wanted
+                    .iter()
+                    .any(|w| rel == w.as_str() || rel.starts_with(&format!("{w}/")));
+            if !keep {
+                continue;
+            }
+        }
+        let _ = e.unpack_in(out);
+    }
+    fs::read_dir(out)
+        .map_err(|e| e.to_string())?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .find(|p| p.is_dir())
+        .ok_or_else(|| "tarball contained no directory".to_string())
+}
+
 fn fetch_all(sources: &[String], tmp: &Path) -> Fetched {
     let mut raw_urls: Vec<&String> = Vec::new();
-    let mut repo_keys: HashMap<String, (String, String)> = HashMap::new();
+    // key -> (repo, gitref, wanted-subpaths, keep_all). keep_all is set when any
+    // source wants the repo root (no subpath), so we can't filter.
+    let mut repo_keys: HashMap<String, (String, String, Vec<String>, bool)> = HashMap::new();
     for s in sources {
         if is_url(s) {
             if !raw_urls.contains(&s) {
                 raw_urls.push(s);
             }
         } else {
-            let (repo, gitref, _) = parse_repo_source(s);
-            repo_keys
+            let (repo, gitref, sub) = parse_repo_source(s);
+            let entry = repo_keys
                 .entry(format!("{repo}@{gitref}"))
-                .or_insert_with(|| (repo.to_string(), gitref.to_string()));
+                .or_insert_with(|| (repo.to_string(), gitref.to_string(), Vec::new(), false));
+            match sub {
+                Some(p) => {
+                    let p = p.to_string();
+                    if !entry.2.contains(&p) {
+                        entry.2.push(p);
+                    }
+                }
+                None => entry.3 = true,
+            }
         }
     }
 
@@ -209,25 +269,17 @@ fn fetch_all(sources: &[String], tmp: &Path) -> Fetched {
             .collect();
         let repo_handles: Vec<_> = repo_keys
             .iter()
-            .map(|(key, (repo, gitref))| {
+            .map(|(key, (repo, gitref, subs, keep_all))| {
                 let (key, repo, gitref) = (key.clone(), repo.clone(), gitref.clone());
+                let wanted: Vec<String> = if *keep_all { Vec::new() } else { subs.clone() };
                 let out = tmp.join(key.replace(['/', '@'], "__"));
                 (
                     key.clone(),
                     scope.spawn(move || -> Result<PathBuf, String> {
                         let url = format!("https://codeload.github.com/{repo}/tar.gz/{gitref}");
                         let bytes = fetch_url(&url).map_err(|e| format!("{e:#}"))?;
-                        fs::create_dir_all(&out).map_err(|e| e.to_string())?;
-                        tar::Archive::new(flate2::read::GzDecoder::new(&bytes[..]))
-                            .unpack(&out)
-                            .map_err(|e| format!("extracting tarball for {key}: {e}"))?;
-                        // tarball root is <repo>-<ref-ish>; locate, don't predict
-                        fs::read_dir(&out)
-                            .map_err(|e| e.to_string())?
-                            .filter_map(|e| e.ok())
-                            .map(|e| e.path())
-                            .find(|p| p.is_dir())
-                            .ok_or_else(|| "tarball contained no directory".to_string())
+                        extract_repo_tarball(&bytes, &out, &wanted)
+                            .map_err(|e| format!("extracting tarball for {key}: {e}"))
                     }),
                 )
             })
@@ -531,5 +583,56 @@ mod tests {
         let dest = dir.path().join("skill");
         write_tree(&dest, &tree).unwrap();
         assert_eq!(read_tree(&dest).unwrap(), tree);
+    }
+
+    /// Build a gz repo tarball: a good skill under `skills/demo`, a decoy file
+    /// under `examples/`, and an escaping symlink at the root.
+    fn sample_tarball() -> Vec<u8> {
+        let mut enc = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+        {
+            let mut b = tar::Builder::new(&mut enc);
+            let add = |b: &mut tar::Builder<_>, path: &str, data: &[u8]| {
+                let mut h = tar::Header::new_gnu();
+                h.set_size(data.len() as u64);
+                h.set_mode(0o644);
+                h.set_cksum();
+                b.append_data(&mut h, path, data).unwrap();
+            };
+            add(
+                &mut b,
+                "pkg-HEAD/skills/demo/SKILL.md",
+                b"---\nname: demo\n",
+            );
+            add(&mut b, "pkg-HEAD/examples/huge.bin", b"not a skill");
+            let mut hl = tar::Header::new_gnu();
+            hl.set_entry_type(tar::EntryType::Symlink);
+            hl.set_size(0);
+            hl.set_mode(0o777);
+            b.append_link(&mut hl, "pkg-HEAD/evil", "../../../../etc/hosts")
+                .unwrap();
+            b.finish().unwrap();
+        }
+        enc.finish().unwrap()
+    }
+
+    #[test]
+    fn extract_filters_to_wanted_subpath() {
+        // Only the wanted subdir is unpacked — the decoy under examples/ (stand-in
+        // for game-creator's awkward .spz asset) is never touched.
+        let tmp = tempfile::tempdir().unwrap();
+        let root = extract_repo_tarball(&sample_tarball(), tmp.path(), &["skills/demo".into()])
+            .expect("extraction should succeed");
+        assert!(root.join("skills/demo/SKILL.md").is_file());
+        assert!(!root.join("examples/huge.bin").exists());
+    }
+
+    #[test]
+    fn extract_keep_all_tolerates_problematic_entry() {
+        // Empty `wanted` keeps everything; the escaping symlink is skipped
+        // without aborting extraction of the good SKILL.md.
+        let tmp = tempfile::tempdir().unwrap();
+        let root = extract_repo_tarball(&sample_tarball(), tmp.path(), &[])
+            .expect("extraction should tolerate the problematic entry");
+        assert!(root.join("skills/demo/SKILL.md").is_file());
     }
 }
