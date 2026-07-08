@@ -1,0 +1,22 @@
+# Data Engineer — a kitout starting point.
+# Sub-categories: SQL/warehouse, dbt, streaming, orchestration.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: dbt/airflow/dagster install via uv (script steps), not brew.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# dbt + DuckDB MCP (connection secrets → model as `secret` steps).
+# [[step]]
+# type = "mcp-server"
+# name = "dbt"
+# command = ["uvx", "dbt-mcp"]
+# needs = ["brewfile"]

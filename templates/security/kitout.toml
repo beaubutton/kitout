@@ -1,0 +1,22 @@
+# Security Engineer — a kitout starting point.
+# Sub-categories: AppSec/SAST, cloud security, container/K8s security, defensive tooling.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: Trail of Bits is the higher-trust skill vendor; Semgrep + Trivy MCP for tool access.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Semgrep + Trivy MCP (SAST + scanning as agent tools).
+# [[step]]
+# type = "mcp-server"
+# name = "semgrep"
+# command = ["uvx", "semgrep-mcp"]
+# needs = ["brewfile"]

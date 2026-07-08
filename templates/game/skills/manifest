@@ -1,0 +1,14 @@
+# Game Developer — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── game skills ──
+# One repo covers Godot/Unity/Unreal/Phaser/Three.js (pin the router + engine dirs):
+awesome-gamedev          | gamedev-skills/awesome-gamedev-agent-skills:router | all
+godot                    | Randroids-Dojo/skills:skills/godot                 | all
+unity-claude-skills      | Nice-Wolf-Studio/unity-claude-skills:SKILL.md      | all
+game-creator             | PlayableIntelligence/game-creator:SKILL.md         | all
+csharp-dotnet            | miles990/claude-software-skills:csharp-dotnet      | all

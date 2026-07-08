@@ -1,0 +1,39 @@
+# Cloud / Infrastructure Architect — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── cloud / infrastructure architect ──
+# ── AWS ──
+brew "awscli"
+brew "eksctl"
+brew "aws-iam-authenticator"
+cask "session-manager-plugin"
+# ── Azure ──
+brew "azure-cli"
+brew "azure-dev"                # azd
+brew "kubelogin"
+# ── GCP ──
+cask "gcloud-cli"               # renamed from google-cloud-sdk
+brew "kubernetes-cli"
+# ── multi-cloud IaC ──
+brew "hashicorp/tap/terraform"  # (or use opentofu)
+brew "opentofu"
+brew "terragrunt"
+brew "tenv"
+brew "terraform-docs"
+brew "checkov"
+brew "trivy"
+brew "infracost"

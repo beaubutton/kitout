@@ -1,0 +1,34 @@
+# Data Engineer — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── data engineer ──
+# ── SQL & warehouses ──
+brew "duckdb"
+brew "postgresql@17"
+brew "libpq"
+brew "sqlite"
+brew "pgcli"
+cask "dbeaver-community"
+# cask "snowflake-snowsql"     # Snowflake CLI (optional)
+# ── streaming ──
+brew "kafka"
+brew "apache-flink"
+# ── orchestration ──
+brew "sqlfluff"
+brew "astronomer/tap/astro"    # local Airflow (needs tap trust)
+# dbt / airflow / dagster are uv installs, not brew:
+#   uv tool install dbt-core dbt-duckdb ; uv tool install dagster

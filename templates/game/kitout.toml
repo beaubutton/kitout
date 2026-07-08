@@ -1,0 +1,27 @@
+# Game Developer — a kitout starting point.
+# Sub-categories: Godot/C#, Unity/C#, Unreal/C++, web games.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: Godot MCP is built pinned (steps/godot-mcp-build.sh pattern); unity-mcp + blender-mcp for the others.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Godot MCP (build it pinned) + Unity + Blender asset MCP.
+# [[step]]
+# type = "mcp-server"
+# name = "unity"
+# command = ["uvx", "unity-mcp"]
+# needs = ["brewfile"]
+# [[step]]
+# type = "mcp-server"
+# name = "blender"
+# command = ["uvx", "blender-mcp"]
+# needs = ["brewfile"]

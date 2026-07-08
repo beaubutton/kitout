@@ -1,0 +1,28 @@
+# AI / LLM Application Engineer — a kitout starting point.
+# Sub-categories: Claude app dev, agent frameworks & MCP, RAG & vector search, LLM eval.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: No maintained RAG skill exists yet; qdrant/chroma + langfuse MCP fill the gap.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Vector-store + eval MCP servers (RAG retrieval + trace debugging).
+# [[step]]
+# type = "mcp-server"
+# name = "qdrant"
+# command = ["uvx", "mcp-server-qdrant"]
+# env = { QDRANT_URL = "${QDRANT_URL}", COLLECTION_NAME = "docs" }
+# needs = ["brewfile"]
+# [[step]]
+# type = "mcp-server"
+# name = "langfuse"
+# command = ["uvx", "langfuse-mcp"]
+# needs = ["brewfile"]

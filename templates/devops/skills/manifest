@@ -1,0 +1,14 @@
+# DevOps / Platform Engineer — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── devops skills (mostly wshobson/agents, audited) ──
+docker-expert            | sickn33/antigravity-awesome-skills:skills/docker-expert                   | all
+k8s-security-policies    | wshobson/agents:plugins/kubernetes-operations/skills/k8s-security-policies | all
+helm-chart-scaffolding   | wshobson/agents:plugins/kubernetes-operations/skills/helm-chart-scaffolding| all
+github-actions-templates | wshobson/agents:plugins/cicd-automation/skills/github-actions-templates    | all
+terraform-module-library | wshobson/agents:plugins/cloud-infrastructure/skills/terraform-module-library | all
+prometheus-configuration | wshobson/agents:plugins/observability-monitoring/skills/prometheus-configuration | all

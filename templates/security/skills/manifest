@@ -1,0 +1,14 @@
+# Security Engineer — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── security skills (high-trust vendors: Trail of Bits, getsentry) ──
+security-review          | getsentry/skills:skills/security-review                    | all
+semgrep                  | trailofbits/skills:plugins/static-analysis/skills/semgrep  | all
+insecure-defaults        | trailofbits/skills:plugins/insecure-defaults/skills/insecure-defaults | all
+supply-chain-risk-auditor| trailofbits/skills:plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor | all
+differential-review      | trailofbits/skills:plugins/differential-review/skills/differential-review | all
+# note: getsentry/security-review shows a Snyk audit failure — resolve in add-skill review

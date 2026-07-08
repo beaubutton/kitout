@@ -1,0 +1,14 @@
+# Frontend Engineer — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── frontend skills ──
+frontend-design           | anthropics/skills:skills/frontend-design                      | all
+react-best-practices      | vercel-labs/agent-skills:skills/react-best-practices          | all
+web-design-guidelines     | vercel-labs/agent-skills:skills/web-design-guidelines         | all
+vue-best-practices        | antfu/skills:skills/vue-best-practices                        | all
+angular-developer         | angular/skills:angular-developer                              | all
+svelte-core-bestpractices | sveltejs/ai-tools:tools/skills/svelte-core-bestpractices      | all

@@ -1,0 +1,15 @@
+# Data Engineer — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── data-engineering skills ──
+supabase-postgres-best-practices | supabase/agent-skills:postgres-best-practices              | all
+using-dbt                        | dbt-labs/dbt-agent-skills:skills/dbt/skills/using-dbt-for-analytics-engineering | all
+dagster-expert                   | dagster-io/skills:dagster-expert                          | all
+airflow                          | astronomer/agents:skills/airflow                          | all
+duckdb-query                     | duckdb/duckdb-skills:skills/query                         | all
+sql-optimization-patterns        | wshobson/agents:sql-optimization-patterns                 | all
+# gap: no maintained Kafka/Flink skill — lean on the confluent MCP

@@ -1,0 +1,22 @@
+# Systems / Embedded Engineer — a kitout starting point.
+# Sub-categories: Rust systems, C/C++, embedded/firmware, WebAssembly.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: rust-docs-mcp keeps crate APIs current; embedded-debugger-mcp (probe-rs) needs a probe attached.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Rust docs + embedded hardware-debug MCP.
+# [[step]]
+# type = "mcp-server"
+# name = "rust-docs"
+# command = ["rustdocs_mcp_server"]
+# needs = ["brewfile"]

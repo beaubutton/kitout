@@ -1,0 +1,33 @@
+# Mobile Developer — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── mobile developer ──
+# ── iOS / Swift (Xcode installs from the App Store, not brew) ──
+brew "cocoapods"
+brew "fastlane"
+brew "swiftlint"
+brew "swiftformat"
+brew "xcbeautify"
+brew "mas"                      # scriptable App Store installs (Xcode: mas install 497799835)
+# ── Android / Kotlin ──
+cask "android-studio"
+cask "temurin"                  # JDK 21
+brew "gradle"
+# ── React Native ──
+brew "watchman"
+# ── Flutter ──
+cask "flutter"

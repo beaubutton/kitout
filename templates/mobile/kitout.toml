@@ -1,0 +1,27 @@
+# Mobile Developer — a kitout starting point.
+# Sub-categories: iOS/Swift, Android/Kotlin, React Native, Flutter.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: XcodeBuildMCP (iOS build/test) + mobile-mcp (cross-platform device automation); Flutter uses `dart mcp-server`.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# XcodeBuild + cross-platform device automation.
+# [[step]]
+# type = "mcp-server"
+# name = "xcodebuild"
+# command = ["npx", "-y", "xcodebuildmcp@latest"]
+# needs = ["brewfile"]
+# [[step]]
+# type = "mcp-server"
+# name = "mobile"
+# command = ["npx", "-y", "@mobilenext/mobile-mcp@latest"]
+# needs = ["brewfile"]

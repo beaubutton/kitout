@@ -1,0 +1,13 @@
+# Creative Technologist — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── creative skills (thin space — RunComfy skills cover hosted gen already) ──
+remotion-best-practices | remotion-dev/skills:skills/remotion       | all
+frontend-design         | anthropics/skills:skills/frontend-design  | all
+shader-dev              | MiniMax-AI/skills:skills/shader-dev        | all
+algorithmic-art         | anthropics/skills:skills/algorithmic-art   | all
+# gap: generative-audio + Processing/oF have no strong skills — lean on the toolchain

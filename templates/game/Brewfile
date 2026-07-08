@@ -1,0 +1,31 @@
+# Game Developer — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── game developer ──
+# ── Godot / C# ──
+cask "godot-mono"               # C#-capable Godot
+brew "dotnet"
+cask "jetbrains-rider"          # best Godot/Unity C# IDE
+# ── Unity / C# ──
+cask "unity-hub"
+# ── Unreal / C++ ──
+cask "epic-games"               # UE5 installs via the launcher
+# ── web games ──
+brew "bun"
+# ── shared assets ──
+cask "blender"
+brew "imagemagick"

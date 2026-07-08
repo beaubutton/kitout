@@ -1,0 +1,23 @@
+# Creative Technologist — a kitout starting point.
+# Sub-categories: gen-image, gen-audio, video/motion, creative coding.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: artokun/comfyui-mcp works via Comfy Cloud (no local box); blender-mcp for 3D.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# ComfyUI (now viable via Comfy Cloud) + Blender MCP.
+# [[step]]
+# type = "mcp-server"
+# name = "comfyui"
+# command = ["npx", "-y", "comfyui-mcp"]
+# env = { COMFYUI_API_KEY = "${COMFYUI_API_KEY}" }
+# needs = ["brewfile"]

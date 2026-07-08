@@ -1,0 +1,28 @@
+# DevOps / Platform Engineer — a kitout starting point.
+# Sub-categories: Kubernetes, CI/CD, Terraform/IaC, containers, observability.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: Kubernetes MCP runs non-destructive; grafana + terraform MCP are the high-value adds.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Kubernetes MCP (non-destructive) + Grafana + Terraform.
+[[step]]
+type = "mcp-server"
+name = "kubernetes"
+command = ["npx", "-y", "@flux159/mcp-server-kubernetes"]
+env = { ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS = "true" }
+needs = ["brewfile"]
+# [[step]]
+# type = "mcp-server"
+# name = "grafana"
+# command = ["mcp-grafana"]
+# needs = ["brewfile"]

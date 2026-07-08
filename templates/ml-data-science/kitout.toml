@@ -1,0 +1,27 @@
+# ML / Data Scientist — a kitout starting point.
+# Sub-categories: PyTorch/MLX, notebooks, classical ML, MLOps.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: Skill coverage is sparse; the Jupyter/HuggingFace/DuckDB MCP servers carry more weight here.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Jupyter + HuggingFace + DuckDB MCP (the maintained local servers).
+# [[step]]
+# type = "mcp-server"
+# name = "jupyter"
+# command = ["uvx", "jupyter-mcp-server@latest"]
+# needs = ["brewfile"]
+# [[step]]
+# type = "mcp-server"
+# name = "huggingface"
+# command = ["npx", "@llmindset/hf-mcp-server"]
+# needs = ["brewfile"]

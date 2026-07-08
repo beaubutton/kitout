@@ -1,0 +1,22 @@
+# Frontend Engineer — a kitout starting point.
+# Sub-categories: React/Next.js, Vue/Nuxt, Svelte/SvelteKit, Angular.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: Playwright MCP covers UI verification for every sub-category.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Playwright MCP — one server for UI verification across all four frameworks.
+[[step]]
+type = "mcp-server"
+name = "playwright"
+command = ["npx", "@playwright/mcp@latest"]
+needs = ["brewfile"]

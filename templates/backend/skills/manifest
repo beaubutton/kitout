@@ -1,0 +1,15 @@
+# Backend Engineer — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── backend skills (one per sub-category; from wshobson/agents 37.6K★) ──
+nodejs-backend-patterns  | wshobson/agents:plugins/javascript-typescript/skills/nodejs-backend-patterns | all
+fastapi-templates        | wshobson/agents:plugins/api-scaffolding/skills/fastapi-templates             | all
+dotnet-backend-patterns  | wshobson/agents:plugins/dotnet-contribution/skills/dotnet-backend-patterns   | all
+golang-grpc              | samber/cc-skills-golang:skills/golang-grpc                                    | all
+java-springboot          | github/awesome-copilot:skills/java-springboot                                 | all
+rust                     | leonardomso/rust-skills:SKILL.md                                              | all
+# kotlin (optional): Kotlin/kotlin-agent-skills:skills/kotlin-backend-jpa-entity-mapping

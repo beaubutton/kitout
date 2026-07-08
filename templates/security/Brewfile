@@ -1,0 +1,44 @@
+# Security Engineer — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── security engineer ──
+# ── AppSec / SAST ──
+brew "semgrep"
+brew "gitleaks"
+brew "trufflehog"
+brew "osv-scanner"
+brew "grype"
+brew "syft"
+brew "trivy"
+# ── cloud security ──
+brew "checkov"
+brew "prowler"
+brew "scoutsuite"
+brew "sops"
+brew "age"
+# ── container / K8s security ──
+brew "hadolint"
+brew "kube-bench"
+brew "kubescape"
+brew "kube-linter"
+brew "cosign"
+brew "conftest"
+brew "opa"
+# ── defensive tooling ──
+brew "nmap"
+brew "gnupg"
+brew "yara"

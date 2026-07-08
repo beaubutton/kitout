@@ -1,0 +1,42 @@
+# Backend Engineer — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── backend engineer ──
+# ── .NET / C# ──
+brew "dotnet"
+# cask "jetbrains-rider"        # full .NET IDE (optional)
+# ── TypeScript / Node ──
+brew "pnpm"
+brew "fnm"                      # fast node version switching
+# brew "bun"                    # optional runtime/bundler (oven-sh/bun/bun)
+# brew "deno"
+# ── Go ──
+brew "go"
+brew "golangci-lint"
+brew "delve"                    # dlv debugger
+# ── Python ──
+brew "python@3.13"
+brew "ruff"                     # lint + format (Astral)
+# ── Java / Kotlin ──
+brew "openjdk"
+brew "maven"
+brew "gradle"
+brew "kotlin"
+cask "intellij-idea-ce"
+# ── Rust ──
+brew "rustup"
+brew "sccache"                  # shared compile cache

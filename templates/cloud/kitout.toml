@@ -1,0 +1,22 @@
+# Cloud / Infrastructure Architect — a kitout starting point.
+# Sub-categories: AWS, Azure, GCP, multi-cloud IaC.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: microsoft/azure-skills is the highest-signal family; AWS leans on awslabs/mcp instead of skills.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Terraform + Azure MCP (AWS invests in the awslabs/mcp monorepo).
+# [[step]]
+# type = "mcp-server"
+# name = "terraform"
+# command = ["docker", "run", "-i", "--rm", "hashicorp/terraform-mcp-server"]
+# needs = ["brewfile"]

@@ -1,0 +1,36 @@
+# Creative Technologist — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── creative technologist ──
+# ── generative image ──
+brew "python@3.13"
+brew "imagemagick"
+brew "libvips"
+brew "ffmpeg"
+brew "aria2"                    # fast model downloads
+# cask "comfyui"               # local node-graph diffusion (optional)
+# cask "draw-things"           # local SD/FLUX (optional)
+# ── generative audio ──
+brew "sox"
+cask "supercollider"
+# ── video / motion ──
+brew "gifski"
+# ── creative coding ──
+brew "glslviewer"
+cask "processing"
+cask "blender"
+# cask "touchdesigner"         # real-time visuals (optional)

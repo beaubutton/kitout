@@ -1,0 +1,23 @@
+# Backend Engineer — a kitout starting point.
+# Sub-categories: .NET/C#, TypeScript/Node, Go, Python, Java/Kotlin, Rust.
+# Keep the sub-category sections you want in Brewfile + skills/manifest, drop the rest.
+# MCP: Context7 (docs) is the highest-leverage MCP here; add a postgres MCP for DB-backed services.
+sudo = true
+
+[[step]]
+type = "brewfile"
+id = "brewfile"
+path = "Brewfile"
+
+[[step]]
+type = "skills"
+id = "skills"
+manifest = "skills/manifest"
+
+# Postgres MCP — introspect schemas + run queries against dev DBs.
+# [[step]]
+# type = "mcp-server"
+# name = "postgres"
+# command = ["uvx", "postgres-mcp"]
+# env = { DATABASE_URI = "${POSTGRES_URI}" }
+# needs = ["brewfile"]

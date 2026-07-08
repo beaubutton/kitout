@@ -1,0 +1,42 @@
+# Systems / Embedded Engineer — Homebrew packages.
+# ── base: every kitout workstation ──────────────────────────────────
+brew "git"
+brew "gh"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "fzf"
+brew "jq"
+brew "starship"
+brew "uv"                 # ubiquitous Python / tool runner
+brew "node"               # coding agents + MCP servers
+cask "ghostty"
+cask "visual-studio-code"
+cask "claude-code"
+
+# ── systems / embedded engineer ──
+# ── Rust systems ──
+brew "rustup"
+brew "sccache"
+brew "cargo-nextest"
+# ── C / C++ ──
+brew "llvm"
+brew "cmake"
+brew "ninja"
+brew "ccache"
+brew "pkgconf"                  # (not pkg-config)
+brew "qemu"
+# ── embedded / firmware ──
+brew "arm-none-eabi-gcc"
+brew "open-ocd"                 # (not openocd)
+brew "stlink"
+brew "dfu-util"
+brew "picocom"
+# probe-rs / cross / svd2rust are cargo installs (script step), not brew
+# ── WebAssembly ──
+brew "wasmtime"
+brew "wabt"
+brew "binaryen"
+brew "wasm-pack"
+brew "wasm-tools"

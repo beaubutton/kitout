@@ -1,0 +1,13 @@
+# AI / LLM Application Engineer — agent skills (name | source | targets).
+# ── base: agent-agnostic process skills ─────────────────────────────
+# Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
+# to a reviewed commit SHA and confirm agent compatibility before relying on it.
+brainstorming | obra/superpowers:skills/brainstorming | all
+tdd           | mattpocock/skills:tdd                  | all
+
+# ── AI/LLM skills ──
+mcp-builder   | anthropics/skills:skills/mcp-builder   | all
+claude-api    | anthropics/skills:skills/claude-api    | all
+skill-creator | anthropics/skills:skills/skill-creator | all
+langfuse      | langfuse/skills:langfuse               | all
+# RAG has no maintained skill yet — cover via claude-api + the qdrant/chroma MCP below
