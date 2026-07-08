@@ -3,16 +3,16 @@
 # Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
 # to a reviewed commit SHA and confirm agent compatibility before relying on it.
 brainstorming | obra/superpowers:skills/brainstorming | all
-tdd           | mattpocock/skills:tdd                  | all
+tdd           | mattpocock/skills:skills/engineering/tdd                  | all
 
 # ── cloud skills (first-party families dominate) ──
 # Azure — pin the architect subset from the 10.2M-install family:
-azure-enterprise-infra-planner | microsoft/azure-skills:azure-enterprise-infra-planner | all
-azure-kubernetes               | microsoft/azure-skills:azure-kubernetes               | all
-azure-compute                  | microsoft/azure-skills:azure-compute                  | all
+azure-enterprise-infra-planner | microsoft/azure-skills:.github/plugins/azure-skills/skills/azure-enterprise-infra-planner | all
+azure-kubernetes               | microsoft/azure-skills:.github/plugins/azure-skills/skills/azure-kubernetes               | all
+azure-compute                  | microsoft/azure-skills:.github/plugins/azure-skills/skills/azure-compute                  | all
 # GCP — official family:
-gke-basics                     | google/skills:gke-basics                              | all
-cloud-run-basics               | google/skills:cloud-run-basics                        | all
+gke-basics                     | google/skills:skills/cloud/gke-basics                              | all
+cloud-run-basics               | google/skills:skills/cloud/cloud-run-basics                        | all
 # Terraform (multi-cloud):
 terraform-skill                | antonbabenko/terraform-skill:skills/terraform-skill   | all
 # AWS is the weak axis (no first-party family): zxkane/aws-skills:aws-cdk-development

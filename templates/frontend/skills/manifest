@@ -3,7 +3,7 @@
 # Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
 # to a reviewed commit SHA and confirm agent compatibility before relying on it.
 brainstorming | obra/superpowers:skills/brainstorming | all
-tdd           | mattpocock/skills:tdd                  | all
+tdd           | mattpocock/skills:skills/engineering/tdd                  | all
 
 # ── frontend skills ──
 frontend-design           | anthropics/skills:skills/frontend-design                      | all

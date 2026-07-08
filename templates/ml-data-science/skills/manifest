@@ -3,11 +3,11 @@
 # Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
 # to a reviewed commit SHA and confirm agent compatibility before relying on it.
 brainstorming | obra/superpowers:skills/brainstorming | all
-tdd           | mattpocock/skills:tdd                  | all
+tdd           | mattpocock/skills:skills/engineering/tdd                  | all
 
 # ── ML/DS skills (a thin ecosystem — these are the maintained ones) ──
 build-ml-pipeline    | probabl-ai/skills:skills/build-ml-pipeline   | all
-marimo-notebook      | pymc-labs/python-analytics-skills:marimo-notebook | all
+marimo-notebook      | pymc-labs/python-analytics-skills:skills/marimo-notebook | all
 deep-learning-pytorch| mindrally/skills:deep-learning-pytorch       | all
 data-analysis-jupyter| mindrally/skills:data-analysis-jupyter       | all
 mlops-automation     | MLOps-Courses/mlops-coding-skills:mlops-automation | all

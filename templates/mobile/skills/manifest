@@ -3,11 +3,11 @@
 # Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
 # to a reviewed commit SHA and confirm agent compatibility before relying on it.
 brainstorming | obra/superpowers:skills/brainstorming | all
-tdd           | mattpocock/skills:tdd                  | all
+tdd           | mattpocock/skills:skills/engineering/tdd                  | all
 
 # ── mobile skills ──
-react-native            | vercel-labs/agent-skills:vercel-react-native-skills           | all
+react-native            | vercel-labs/agent-skills:skills/react-native-skills           | all
 flutter-architecture    | flutter/skills:skills/flutter-apply-architecture-best-practices | all
 swiftui-expert          | avdlee/swiftui-agent-skill:swiftui-expert-skill               | all
-android-compose         | android/skills:jetpack-compose/migrate-xml-views-to-jetpack-compose | all
-building-native-ui      | expo/skills:building-native-ui                                | all
+android-compose         | android/skills:jetpack-compose/migration/migrate-xml-views-to-jetpack-compose | all
+building-native-ui      | expo/skills:plugins/expo/skills/expo-native-ui                                | all

@@ -3,11 +3,11 @@
 # Pins are UN-RESOLVED (owner/repo:path). Run the add-skill review to pin each
 # to a reviewed commit SHA and confirm agent compatibility before relying on it.
 brainstorming | obra/superpowers:skills/brainstorming | all
-tdd           | mattpocock/skills:tdd                  | all
+tdd           | mattpocock/skills:skills/engineering/tdd                  | all
 
 # ── systems skills (concentrated in a few repos) ──
-low-level-dev     | mohitmishra786/low-level-dev-skills:skills/rust/rust-no-std/SKILL.md | all
-rust-skills       | leonardomso/rust-skills:SKILL.md                                     | all
-embedded-systems  | jeffallan/claude-skills:skills/embedded-systems/SKILL.md             | all
-wasm-component    | cosmonic-labs/skills:webassembly-component-development/SKILL.md       | all
+low-level-dev     | mohitmishra786/low-level-dev-skills:skills/rust/rust-no-std | all
+rust-skills       | leonardomso/rust-skills                                     | all
+embedded-systems  | jeffallan/claude-skills:skills/embedded-systems             | all
+wasm-component    | cosmonic-labs/skills:webassembly-component-development       | all
 # note: actionbook/rust-skills is popular but has NO LICENSE — do not pin
