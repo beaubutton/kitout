@@ -1,6 +1,7 @@
 mod create;
 mod dag;
 mod manifest;
+mod mcp_serve;
 mod step;
 mod sudo;
 mod ui;
@@ -60,6 +61,8 @@ enum Cmd {
     Validate,
     /// Print the manifest JSON Schema (for editors and agents)
     Schema,
+    /// Run as an MCP server over stdio (agent-operable)
+    McpServe,
     /// Scaffold a new machine config from a persona template
     CreateConfig {
         /// Directory to create
@@ -105,6 +108,10 @@ fn main() -> Result<()> {
         return create::run(dir, persona, *github);
     }
 
+    if let Cmd::McpServe = cli.command {
+        return mcp_serve::run();
+    }
+
     let parsed = manifest::load(&manifest_path)?;
     let wants_sudo = parsed.sudo;
     let steps = manifest::build_steps(parsed, &base)?;
@@ -116,6 +123,7 @@ fn main() -> Result<()> {
         Cmd::Validate => unreachable!("handled before manifest load"),
         Cmd::Schema => unreachable!("handled before manifest load"),
         Cmd::CreateConfig { .. } => unreachable!("handled before manifest load"),
+        Cmd::McpServe => unreachable!("handled before manifest load"),
         Cmd::Apply { yes, force_replace } => {
             let policy = match (yes, force_replace) {
                 (_, true) => ConflictPolicy::ForceReplace,

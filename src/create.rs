@@ -42,7 +42,12 @@ pub fn run(dir: &Path, persona: &str, github: bool) -> Result<()> {
     git(dir, &["add", "-A"])?;
     git(
         dir,
-        &["commit", "-q", "-m", &format!("{persona} workstation baseline")],
+        &[
+            "commit",
+            "-q",
+            "-m",
+            &format!("{persona} workstation baseline"),
+        ],
     )
     .context("git commit failed (is user.name/user.email configured?)")?;
     println!("initialized a git repo with the baseline committed");
