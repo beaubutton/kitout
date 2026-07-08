@@ -72,6 +72,26 @@ back to local-only when `gh` is absent). `mcp-serve` exposes `personas`,
 build and converge a machine as a first-class palette action. The tool that
 registers MCP servers is itself MCP-operable.
 
+### Register kitout's tools with your agent
+
+kitout's MCP server is a local stdio process — point your agent at it:
+
+```bash
+claude mcp add --scope user kitout -- kitout mcp-serve   # Claude Code
+```
+
+For **Claude Desktop**, add to `~/Library/Application Support/Claude/claude_desktop_config.json`
+(use the absolute path — Desktop doesn't inherit your shell's `PATH`), then restart it:
+
+```json
+{ "mcpServers": { "kitout": { "command": "/opt/homebrew/bin/kitout", "args": ["mcp-serve"] } } }
+```
+
+If you already manage a machine with kitout, prefer declaring these as an
+`mcp-server` step (Claude Code) and a `json-merge` step (Claude Desktop) so
+they stay converged. Cloud surfaces (Claude on web/mobile, Cowork's remote
+sessions) can't reach a local stdio server.
+
 ## Design principles (locked by design review)
 
 - **Local edits are sacred.** Unattended runs never destroy a locally
