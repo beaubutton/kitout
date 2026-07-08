@@ -51,6 +51,27 @@ kitout apply --force-replace   # unattended: manifest wins (servers/CI)
 
 **[Manifest reference →](docs/manifest.md)** — every step type and its fields.
 
+## Agent-operable
+
+kitout is built to be driven by coding agents, not just typed at:
+
+```
+kitout schema                       # the manifest JSON Schema — authoring guide
+kitout validate --json              # parse + check a config, structured errors
+kitout plan --json                  # machine-readable diffs
+kitout create-config ai-box --type ai-llm [--github]   # scaffold from a template
+kitout mcp-serve                    # run as an MCP server over stdio
+```
+
+`create-config` scaffolds a new machine config from a **[persona
+template](templates/)** (backend, frontend, ai-llm, devops, game, … — twelve
+in all), git-inits it, and optionally creates a private GitHub repo (falling
+back to local-only when `gh` is absent). `mcp-serve` exposes `personas`,
+`schema`, `validate`, `plan`, `status`, `create_config`, and a **gated
+`apply`** (plan-only unless `confirm:true`) as MCP tools — so an agent can
+build and converge a machine as a first-class palette action. The tool that
+registers MCP servers is itself MCP-operable.
+
 ## Design principles (locked by design review)
 
 - **Local edits are sacred.** Unattended runs never destroy a locally
