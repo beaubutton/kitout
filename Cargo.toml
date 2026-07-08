@@ -25,6 +25,7 @@ ureq = "2"
 flate2 = "1"
 tar = "0.4"
 tempfile = "3"
+schemars = "0.8"
 
 # The profile that 'dist' will build with
 [profile.dist]

@@ -19,7 +19,7 @@ use crate::steps::{
     skills::SkillsStep,
 };
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     /// When true, `apply` collects the sudo password once (Keychain-backed
@@ -32,7 +32,7 @@ pub struct Manifest {
 
 /// One `[[step]]` table. Tagged by `type`; unknown keys are hard errors so
 /// typos surface at parse time, not as silently-ignored config.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum StepDef {
     File(FileDef),
@@ -48,7 +48,7 @@ pub enum StepDef {
     Defaults(DefaultsDef),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct SecretDef {
     pub id: Option<String>,
@@ -62,7 +62,7 @@ pub struct SecretDef {
     pub account: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct MergeDef {
     pub id: Option<String>,
@@ -73,10 +73,11 @@ pub struct MergeDef {
     #[serde(default)]
     pub mode: MergeMode,
     /// Keys to merge (a TOML table).
+    #[schemars(with = "serde_json::Value")]
     pub value: toml::Value,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct BlockDef {
     pub id: Option<String>,
@@ -95,7 +96,7 @@ fn default_comment_prefix() -> String {
     "#".into()
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct DefaultsDef {
     pub id: Option<String>,
@@ -106,15 +107,16 @@ pub struct DefaultsDef {
     pub write: Vec<DefaultsWriteDef>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct DefaultsWriteDef {
     pub domain: String,
     pub key: String,
+    #[schemars(with = "serde_json::Value")]
     pub value: toml::Value,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct SkillsDef {
     pub id: Option<String>,
@@ -132,7 +134,7 @@ fn default_skills_state() -> String {
     "~/.config/kitout/managed-skills".into()
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct McpDef {
     pub id: Option<String>,
@@ -148,7 +150,7 @@ pub struct McpDef {
     pub headers: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct CmdDef {
     pub id: Option<String>,
@@ -160,7 +162,7 @@ pub struct CmdDef {
     pub install: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct BrewfileDef {
     pub id: Option<String>,
@@ -170,7 +172,7 @@ pub struct BrewfileDef {
     pub path: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct FileDef {
     pub id: Option<String>,
@@ -184,7 +186,7 @@ pub struct FileDef {
     pub on_conflict: OnConflict,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum OnConflict {
     #[default]
@@ -193,7 +195,7 @@ pub enum OnConflict {
     Keep,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct ScriptDef {
     pub id: Option<String>,
@@ -207,7 +209,7 @@ pub struct ScriptDef {
     pub check: Option<Vec<String>>,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum OnError {
     #[default]

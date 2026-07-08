@@ -57,6 +57,8 @@ enum Cmd {
     Status,
     /// Parse and check the manifest without touching the machine
     Validate,
+    /// Print the manifest JSON Schema (for editors and agents)
+    Schema,
     /// Run a single step (and, transitively, its needs)
     Step { id: String },
 }
@@ -76,6 +78,12 @@ fn main() -> Result<()> {
         return validate(&manifest_path, &base, json);
     }
 
+    if let Cmd::Schema = cli.command {
+        let schema = schemars::schema_for!(manifest::Manifest);
+        println!("{}", serde_json::to_string_pretty(&schema)?);
+        return Ok(());
+    }
+
     let parsed = manifest::load(&manifest_path)?;
     let wants_sudo = parsed.sudo;
     let steps = manifest::build_steps(parsed, &base)?;
@@ -85,6 +93,7 @@ fn main() -> Result<()> {
         Cmd::Plan => plan(&steps, &waves, json),
         Cmd::Status => status(&steps, json),
         Cmd::Validate => unreachable!("handled before manifest load"),
+        Cmd::Schema => unreachable!("handled before manifest load"),
         Cmd::Apply { yes, force_replace } => {
             let policy = match (yes, force_replace) {
                 (_, true) => ConflictPolicy::ForceReplace,

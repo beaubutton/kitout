@@ -13,7 +13,7 @@ use anyhow::{bail, Context, Result};
 
 use crate::step::{Applied, Change, ConflictPolicy, Status, Step};
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum MergeMode {
     #[default]
