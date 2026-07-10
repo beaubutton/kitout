@@ -234,6 +234,40 @@ path = "Brewfile"
 
 ---
 
+## `brew`
+
+Declare Homebrew packages inline, without a sidecar Brewfile — handy for a small,
+self-contained fragment (see [Inheritance](#inheritance-extends)). kitout renders
+the lists into a Brewfile and runs the same `brew bundle` as `brewfile`.
+
+| Field      | Type     | Default | Meaning |
+|------------|----------|---------|---------|
+| `taps`     | string[] | `[]`    | Taps to add, `user/repo` — rendered as `tap "..."`. |
+| `formulae` | string[] | `[]`    | Formulae — rendered as `brew "..."`. A tap-scoped `user/tap/name` is trusted automatically. |
+| `casks`    | string[] | `[]`    | Casks — rendered as `cask "..."`. |
+| `vscode`   | string[] | `[]`    | VS Code extension ids — rendered as `vscode "..."`. |
+
+Auto id: `brew:<first-package>` (first formula, else cask, else tap) — give
+multiple `brew` steps an explicit `id` so they don't collide. Like `brewfile`,
+all brew steps share one Homebrew resource, so they run serially, never
+concurrently.
+
+```toml
+[[step]]
+type = "brew"
+id = "game-dev"
+taps = ["hashicorp/tap"]
+formulae = ["jq", "hashicorp/tap/terraform"]
+casks = ["godot-mono"]
+vscode = ["golang.go"]
+```
+
+Inline `brew` covers string-list entries only. Anything structured — `mas` apps
+with numeric ids, per-formula `args`, custom-URL taps — belongs in a real
+`brewfile` step, so kitout isn't reimplementing Brewfile syntax.
+
+---
+
 ## `secret`
 
 Prompt once for a secret, stash it in the login Keychain, reuse it forever.

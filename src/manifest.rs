@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use crate::step::Step;
 use crate::steps::{
     block::BlockInFileStep,
-    brewfile::BrewfileStep,
+    brewfile::{BrewStep, BrewfileStep},
     cmd::CommandIfMissingStep,
     defaults::{DefaultsStep, DefaultsWrite},
     file::FileStep,
@@ -66,6 +66,7 @@ pub enum StepDef {
     McpServer(McpDef),
     CommandIfMissing(CmdDef),
     Brewfile(BrewfileDef),
+    Brew(BrewDef),
     Secret(SecretDef),
     JsonMerge(MergeDef),
     TomlMerge(MergeDef),
@@ -195,6 +196,26 @@ pub struct BrewfileDef {
     pub needs: Vec<String>,
     /// Brewfile path, relative to this manifest's directory.
     pub path: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct BrewDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// Homebrew taps to add (`user/repo`).
+    #[serde(default)]
+    pub taps: Vec<String>,
+    /// Formulae to install (`brew "..."`).
+    #[serde(default)]
+    pub formulae: Vec<String>,
+    /// Casks to install (`cask "..."`).
+    #[serde(default)]
+    pub casks: Vec<String>,
+    /// VS Code extensions to install (`vscode "..."`).
+    #[serde(default)]
+    pub vscode: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -375,6 +396,28 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                     id,
                     needs: d.needs,
                     path: base.join(&d.path),
+                }));
+            }
+            StepDef::Brew(d) => {
+                // Default id from the first package so multiple inline `brew`
+                // steps (e.g. across `extends` fragments) don't collide on a
+                // bare "brew" and trip the duplicate-id guard.
+                let id = d.id.clone().unwrap_or_else(|| {
+                    match d
+                        .formulae
+                        .first()
+                        .or_else(|| d.casks.first())
+                        .or_else(|| d.taps.first())
+                    {
+                        Some(first) => format!("brew:{first}"),
+                        None => "brew".into(),
+                    }
+                });
+                let content = BrewStep::render(&d.taps, &d.formulae, &d.casks, &d.vscode);
+                steps.push(Box::new(BrewStep {
+                    id,
+                    needs: d.needs,
+                    content,
                 }));
             }
             StepDef::Secret(d) => {
