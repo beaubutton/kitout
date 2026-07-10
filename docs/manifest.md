@@ -20,10 +20,39 @@ with `kitout plan`.
 
 ## Top-level
 
-| Key    | Type    | Default | Meaning |
-|--------|---------|---------|---------|
-| `sudo` | bool    | `false` | When true, `apply` prompts for the sudo password once and stashes it in the login Keychain, exposing it to every child process via `SUDO_ASKPASS` for the rest of the run. Needed because `brew` runs `sudo --reset-timestamp`, so a cached timestamp alone doesn't survive. Scripts opt in with `sudo -A`. The Keychain item is deleted when the run ends. |
-| `step` | array   | `[]`    | The steps, written as repeated `[[step]]` tables. |
+| Key       | Type            | Default | Meaning |
+|-----------|-----------------|---------|---------|
+| `extends` | string/string[] | `[]`    | Base manifests to inherit — see below. |
+| `sudo`    | bool            | `false` | When true, `apply` prompts for the sudo password once and stashes it in the login Keychain, exposing it to every child process via `SUDO_ASKPASS` for the rest of the run. Needed because `brew` runs `sudo --reset-timestamp`, so a cached timestamp alone doesn't survive. Scripts opt in with `sudo -A`. The Keychain item is deleted when the run ends. `sudo` OR-merges across `extends`. |
+| `step`    | array           | `[]`    | The steps, written as repeated `[[step]]` tables. |
+
+## Inheritance (`extends`)
+
+One shared baseline, many machines — without duplicating it. Split the config
+into single-purpose files and compose them:
+
+```toml
+# base.toml       → the baseline (every machine)
+# game-dev.toml   → just the game-dev steps
+# ai.toml         → just the ai steps
+
+# this machine's kitout.toml:
+extends = ["base.toml", "game-dev.toml", "ai.toml"]
+[[step]]                       # plus anything machine-specific
+...
+```
+
+`kitout -m <file>` loads the file, merges everything it `extends` (left-to-right,
+**recursively**, each file merged **once** even via a diamond), then appends the
+file's own steps. Which config a machine runs is just which file you point `-m`
+at — no flags, no profiles, no state.
+
+Rules: **step ids must be unique** across a manifest and everything it extends
+(a collision is an error — merge is append-only, no override). `extends` cycles
+are an error. Paths resolve relative to the file that declares them and must
+stay within its directory tree. **Keep extended files as siblings** — every
+step's `source` / `path` / Brewfile resolves against the *root* manifest's
+directory. Omit `extends` entirely and a manifest behaves exactly as before.
 
 ## Fields common to every step
 
