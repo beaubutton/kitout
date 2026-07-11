@@ -215,6 +215,43 @@ install = ["dotnet", "tool", "install", "--global", "PowerShell"]
 
 ---
 
+## `absent`
+
+The inverse of `command-if-missing`: probe for something, and run a removal
+command only when it's **present**. For uninstalling what a machine shouldn't
+have — bundled apps (Pages, GarageBand), an App Store app, a stray brew/npm
+package. Stateless like every step: presence is read off the machine, so once
+the thing is gone the step is satisfied — no state file, nothing to track.
+
+| Field    | Type     | Default      | Meaning |
+|----------|----------|--------------|---------|
+| `probe`  | string   | *(required)* | What to look for. A bare name is searched on `PATH`; a value containing `/` is checked as a literal path. **Present → remove; absent → satisfied.** |
+| `remove` | string[] | *(required)* | Removal argv, spawned directly (no shell). Prefix with `sudo` (with `sudo = true`) for admin-owned paths. |
+
+Auto id: `absent:<probe>`. After a successful removal kitout re-checks the
+probe; a command that exits `0` but leaves it present (a SIP-protected system
+app, a wrong package name) is reported as a failure rather than silently
+looping as pending.
+
+```toml
+# Debloat a bundled app
+[[step]]
+type = "absent"
+probe = "/Applications/GarageBand.app"
+remove = ["sudo", "rm", "-rf", "/Applications/GarageBand.app"]
+
+# Drop a global npm package
+[[step]]
+type = "absent"
+probe = "node-sass"
+remove = ["npm", "uninstall", "-g", "node-sass"]
+```
+
+Only SIP-writable paths can be removed: the iWork/iLife apps in `/Applications`
+go, but sealed system apps (Safari, Mail) can't be, even with sudo.
+
+---
+
 ## `brewfile`
 
 Run `brew bundle` against a Brewfile, trusting any taps it declares.

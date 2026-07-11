@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 
 use crate::step::Step;
 use crate::steps::{
+    absent::AbsentStep,
     block::BlockInFileStep,
     brewfile::{BrewStep, BrewfileStep},
     cmd::CommandIfMissingStep,
@@ -65,6 +66,7 @@ pub enum StepDef {
     Skills(SkillsDef),
     McpServer(McpDef),
     CommandIfMissing(CmdDef),
+    Absent(AbsentDef),
     Brewfile(BrewfileDef),
     Brew(BrewDef),
     Secret(SecretDef),
@@ -186,6 +188,19 @@ pub struct CmdDef {
     pub probe: String,
     /// Installer argv, spawned directly (no shell).
     pub install: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct AbsentDef {
+    pub id: Option<String>,
+    #[serde(default)]
+    pub needs: Vec<String>,
+    /// What to look for; present → remove, absent → satisfied. A value with '/'
+    /// is a path (tilde-expanded), else a `PATH` lookup.
+    pub probe: String,
+    /// Removal argv, spawned directly (no shell).
+    pub remove: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -388,6 +403,17 @@ pub fn build_steps(manifest: Manifest, base: &Path) -> Result<Vec<Box<dyn Step>>
                     needs: d.needs,
                     probe: d.probe,
                     install: d.install,
+                }));
+            }
+            StepDef::Absent(d) => {
+                let id =
+                    d.id.clone()
+                        .unwrap_or_else(|| format!("absent:{}", d.probe));
+                steps.push(Box::new(AbsentStep {
+                    id,
+                    needs: d.needs,
+                    probe: d.probe,
+                    remove: d.remove,
                 }));
             }
             StepDef::Brewfile(d) => {

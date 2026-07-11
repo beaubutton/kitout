@@ -16,7 +16,9 @@ pub struct CommandIfMissingStep {
     pub install: Vec<String>,
 }
 
-fn on_path(bin: &str) -> bool {
+/// Is `bin` present? A value containing '/' is a path (tilde-expanded); a bare
+/// name is looked up on `PATH`. Shared with the `absent` step (its inverse).
+pub(crate) fn on_path(bin: &str) -> bool {
     // A probe containing '/' is a path (tilde-expanded), not a PATH lookup —
     // covers binaries in dirs like ~/.dotnet/tools that only login shells see.
     if bin.contains('/') {

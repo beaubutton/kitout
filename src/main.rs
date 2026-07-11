@@ -6,6 +6,7 @@ mod step;
 mod sudo;
 mod ui;
 mod steps {
+    pub mod absent;
     pub mod block;
     pub mod brewfile;
     pub mod cmd;
