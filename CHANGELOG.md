@@ -1,3 +1,8 @@
+## [0.4.0] - 2026-07-11
+
+### 🚀 Features
+
+- Absent step — remove software declaratively
 ## [0.3.0] - 2026-07-11
 
 ### 🚀 Features
@@ -8,6 +13,10 @@
 ### 📚 Documentation
 
 - How to register kitout's MCP server with an agent
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V0.3.0
 ## [0.2.1] - 2026-07-08
 
 ### 🐛 Bug Fixes
