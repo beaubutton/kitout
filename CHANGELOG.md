@@ -1,8 +1,22 @@
+## [0.3.0] - 2026-07-11
+
+### 🚀 Features
+
+- Manifest inheritance via `extends`
+- Inline brew step (taps/formulae/casks/vscode)
+
+### 📚 Documentation
+
+- How to register kitout's MCP server with an agent
 ## [0.2.1] - 2026-07-08
 
 ### 🐛 Bug Fixes
 
 - *(skills)* Extract only the needed subpath; detect oversized tarballs
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V0.2.1
 ## [0.2.0] - 2026-07-08
 
 ### 🚀 Features
