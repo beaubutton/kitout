@@ -1,8 +1,26 @@
+## [0.5.0] - 2026-07-12
+
+### 🚀 Features
+
+- [**breaking**] Skills `all` = claude,shared (pi reads shared)
+## [0.4.1] - 2026-07-12
+
+### 🐛 Bug Fixes
+
+- Kitout step never bootstrapped sudo
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V0.4.1
 ## [0.4.0] - 2026-07-11
 
 ### 🚀 Features
 
 - Absent step — remove software declaratively
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V0.4.0
 ## [0.3.0] - 2026-07-11
 
 ### 🚀 Features
