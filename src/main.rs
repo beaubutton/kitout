@@ -148,6 +148,15 @@ fn main() -> Result<()> {
                 .map(|w| w.iter().copied().filter(|i| chain.contains(i)).collect())
                 .filter(|w: &Vec<usize>| !w.is_empty())
                 .collect();
+            // The chain can contain privileged steps (`sudo -A` scripts), so
+            // this needs the same sudo bootstrap as Apply. Unlike Apply there
+            // is no -y flag to signal interactivity — gate on a real TTY.
+            let _sudo = if wants_sudo {
+                use std::io::IsTerminal;
+                Some(sudo::setup(std::io::stdin().is_terminal())?)
+            } else {
+                None
+            };
             apply(&steps, &filtered_waves, ConflictPolicy::Interactive)
         }
     }
