@@ -71,8 +71,13 @@ fn parse_manifest(raw: &str) -> Result<Vec<Entry>> {
                 ln + 1
             );
         }
+        // `all` = Claude Code + the shared cross-agent dir. It deliberately
+        // omits `pi`: pi auto-discovers `~/.agents/skills` (the Shared dir) as
+        // well as its own `~/.pi/agent/skills`, so also installing to `pi`
+        // double-serves it and pi reports every such skill as a collision.
+        // Use `pi` explicitly for a pi-private skill that shouldn't be shared.
         let targets: Vec<Target> = if parts[2] == "all" {
-            vec![Target::Claude, Target::Pi, Target::Shared]
+            vec![Target::Claude, Target::Shared]
         } else {
             parts[2]
                 .split(',')
@@ -557,15 +562,14 @@ mod tests {
 
     #[test]
     fn parses_entries_and_targets() {
-        let raw =
-            "# comment\n\nherdr | https://x/SKILL.md | all\nfoo | o/r@abc:p/q | claude,shared\n";
+        let raw = "# comment\n\nherdr | https://x/SKILL.md | all\nfoo | o/r@abc:p/q | claude,shared\nbar | o/r@abc:p/q | pi\n";
         let e = parse_manifest(raw).unwrap();
-        assert_eq!(e.len(), 2);
-        assert_eq!(
-            e[0].targets,
-            vec![Target::Claude, Target::Pi, Target::Shared]
-        );
+        assert_eq!(e.len(), 3);
+        // `all` is Claude + Shared — not Pi (pi reads the Shared dir itself).
+        assert_eq!(e[0].targets, vec![Target::Claude, Target::Shared]);
         assert_eq!(e[1].targets, vec![Target::Claude, Target::Shared]);
+        // `pi` still works when named explicitly (for pi-private skills).
+        assert_eq!(e[2].targets, vec![Target::Pi]);
     }
 
     #[test]

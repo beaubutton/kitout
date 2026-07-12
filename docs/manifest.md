@@ -146,10 +146,23 @@ grill-me        | https://example.com/SKILL.md   | all
 ```
 
 `source` is either a raw `SKILL.md` URL or a GitHub `owner/repo[@ref][:path]`
-(fetched as one tarball per `repo@ref`). Targets map to per-agent skills dirs;
-a skill installs only when content differs, and copies whose manifest entry or
-target disappears are removed. A fetch failure never removes or overwrites a
-good copy.
+(fetched as one tarball per `repo@ref`). A skill installs only when content
+differs, and copies whose manifest entry or target disappears are removed. A
+fetch failure never removes or overwrites a good copy.
+
+Targets are a comma-separated subset of these dirs, or `all`:
+
+| Target   | Directory              | Read by |
+|----------|------------------------|---------|
+| `claude` | `~/.claude/skills`     | Claude Code |
+| `shared` | `~/.agents/skills`     | the cross-agent convention — codex, opencode, gemini, **and pi** |
+| `pi`     | `~/.pi/agent/skills`   | pi's private dir |
+| `all`    | `claude` + `shared`    | everyone |
+
+`all` is `claude,shared` — it omits `pi` on purpose: pi auto-discovers
+`~/.agents/skills` (`shared`) as well as its own dir, so also installing to
+`pi` double-serves it and pi flags every such skill as a collision. Reach for
+`pi` explicitly only for a pi-private skill you don't want in the shared dir.
 
 ```toml
 [[step]]
