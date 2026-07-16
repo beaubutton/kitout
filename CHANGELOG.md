@@ -1,8 +1,17 @@
+## [0.5.1] - 2026-07-16
+
+### 🐛 Bug Fixes
+
+- Restore the terminal on interrupt/panic
 ## [0.5.0] - 2026-07-12
 
 ### 🚀 Features
 
 - [**breaking**] Skills `all` = claude,shared (pi reads shared)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V0.5.0
 ## [0.4.1] - 2026-07-12
 
 ### 🐛 Bug Fixes
