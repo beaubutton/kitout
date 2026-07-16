@@ -81,6 +81,11 @@ enum Cmd {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    // Snapshot the tty and restore it on interrupt/panic; the guard covers
+    // normal and error returns. Prevents a disrupted run leaving the terminal
+    // in raw mode (the "staircase").
+    ui::install_guards();
+    let _restore = ui::RestoreOnDrop;
     let json = cli.json;
     let manifest_path = cli.manifest.canonicalize().unwrap_or(cli.manifest.clone());
     let base = manifest_path

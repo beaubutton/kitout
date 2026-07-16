@@ -27,6 +27,8 @@ tar = "0.4"
 tempfile = "3"
 schemars = "0.8"
 include_dir = "0.7"
+ctrlc = "3"
+libc = "0.2"
 
 # The profile that 'dist' will build with
 [profile.dist]
