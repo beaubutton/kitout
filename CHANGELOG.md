@@ -1,8 +1,17 @@
+## [0.5.2] - 2026-07-17
+
+### 🐛 Bug Fixes
+
+- Don't emit the show-cursor escape to a non-terminal
 ## [0.5.1] - 2026-07-16
 
 ### 🐛 Bug Fixes
 
 - Restore the terminal on interrupt/panic
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V0.5.1
 ## [0.5.0] - 2026-07-12
 
 ### 🚀 Features
