@@ -71,7 +71,12 @@ mod tty {
 /// several exit paths.
 pub fn restore_terminal() {
     clear_progress();
-    let _ = console::Term::stderr().show_cursor();
+    // Only emit the show-cursor escape to a real terminal. Writing it to a pipe
+    // or redirect pollutes captured output (e.g. `kitout plan --json | jq`).
+    let term = console::Term::stderr();
+    if term.is_term() {
+        let _ = term.show_cursor();
+    }
     tty::restore();
 }
 
